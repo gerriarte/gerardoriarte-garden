@@ -1,0 +1,56 @@
+---
+import { GLIFOS } from '../lib/glifos';
+import type { Estado } from '../lib/estados';
+
+interface Props {
+  estado: Estado;
+  /** Lado del cuadro en px. El glifo se dibuja en un radio nominal de 10. */
+  tamano?: number;
+}
+const { estado, tamano = 34 } = Astro.props;
+const g = GLIFOS[estado];
+---
+
+<svg
+  class={`glifo glifo--${estado}`}
+  width={tamano}
+  height={tamano}
+  viewBox="-13 -13 26 26"
+  aria-hidden="true"
+  focusable="false"
+>
+  {g.cuerpo && <path class="glifo__cuerpo" d={g.cuerpo} />}
+  {g.trazos.map((d) => <path class="glifo__trazo" d={d} />)}
+  {g.puntos?.map((p) => <circle class="glifo__punto" cx={p.cx} cy={p.cy} r={p.r} />)}
+</svg>
+
+<style>
+  .glifo {
+    display: block;
+    overflow: visible;
+  }
+  .glifo__trazo {
+    fill: none;
+    stroke: var(--tinta);
+    stroke-width: 1.1;
+    stroke-linecap: round;
+  }
+  .glifo__punto {
+    fill: var(--tinta);
+  }
+  .glifo__cuerpo {
+    fill: var(--ambar);
+    stroke: var(--tinta);
+    stroke-width: 1.1;
+  }
+
+  /* La espora vive en lo hondo: su halo es tentativo. */
+  .glifo--semilla .glifo__trazo {
+    stroke-dasharray: 2 3.2;
+    stroke: var(--tinta-suave);
+  }
+  /* El micelio ya está vivo: un toque de musgo, con cuentagotas. */
+  .glifo--flor .glifo__punto {
+    fill: var(--musgo);
+  }
+</style>

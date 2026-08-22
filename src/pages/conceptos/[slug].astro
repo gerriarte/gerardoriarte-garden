@@ -1,0 +1,264 @@
+---
+import Base from '../../layouts/Base.astro';
+import MapaMicelio from '../../components/MapaMicelio.astro';
+import GlifoEstado from '../../components/GlifoEstado.astro';
+import { getCollection, render } from 'astro:content';
+import { backlinksDe, construirRed } from '../../lib/grafo';
+import { ESTADOS } from '../../lib/estados';
+import { paginaConcepto } from '../../lib/estructurados';
+
+export async function getStaticPaths() {
+  const conceptos = await getCollection('conceptos');
+  return conceptos.map((c) => ({ params: { slug: c.id }, props: { entrada: c } }));
+}
+
+const { entrada } = Astro.props;
+const { Content } = await render(entrada);
+const d = entrada.data;
+const est = ESTADOS[d.estado];
+
+const backlinks = await backlinksDe(entrada.id);
+const { conceptos } = await construirRed();
+const titulos = new Map(conceptos.map((c) => [c.slug, c.titulo]));
+const salientes = d.conecta.filter((s) => titulos.has(s));
+
+const fmt = (x?: Date) =>
+  x ? x.toLocaleDateString('es', { year: 'numeric', month: 'short' }) : null;
+
+const esteConcepto = conceptos.find((c) => c.slug === entrada.id)!;
+// Conteo aproximado sobre el markdown crudo: alcanza para wordCount.
+const palabras = (entrada.body ?? '')
+  .replace(/<[^>]+>/g, ' ')
+  .split(/\s+/)
+  .filter(Boolean).length;
+const jsonLd = paginaConcepto({
+  concepto: esteConcepto,
+  conexiones: [
+    ...salientes.map((sl) => ({ slug: sl, titulo: titulos.get(sl)! })),
+    ...backlinks,
+  ],
+  palabras,
+});
+---
+
+<Base
+  titulo={`${d.titulo} — El Jardín`}
+  descripcion={d.resumen}
+  tipo="article"
+  publicada={d.plantada}
+  modificada={d.podada ?? d.plantada}
+  imagen={`/og/${entrada.id}.png`}
+  jsonLd={jsonLd}
+>
+  <article class="contenedor nota">
+    <div class="nota__cuerpo">
+      <a href="/" class="campo volver">← al micelio</a>
+
+      <div class="nota__encabezado">
+        <div class="nota__glifo">
+          <GlifoEstado estado={d.estado} tamano={52} />
+        </div>
+        <div>
+          <p class="etiqueta-campo">{est.label} · {d.dominio}</p>
+          <h1 class="nota__titulo">{d.titulo}</h1>
+        </div>
+      </div>
+
+      <p class="nota__etapa">{est.descripcion}</p>
+
+      {d.cosecha && (
+        <div class="cosecha campo">
+          <span class="cosecha__sello">cosecha</span>
+          <span>{d.cosecha}</span>
+        </div>
+      )}
+
+      <div class="prosa">
+        <Content />
+      </div>
+
+      <div class="micelio-local">
+        {salientes.length > 0 && (
+          <div class="micelio-local__bloque">
+            <p class="etiqueta-campo">hifas que salen</p>
+            <ul>
+              {salientes.map((s) => (
+                <li>
+                  <a href={`/conceptos/${s}`}>→ {titulos.get(s)}</a>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+        {backlinks.length > 0 && (
+          <div class="micelio-local__bloque">
+            <p class="etiqueta-campo">hifas que entran</p>
+            <ul>
+              {backlinks.map((b) => (
+                <li>
+                  <a href={`/conceptos/${b.slug}`}>← {b.titulo}</a>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+      </div>
+    </div>
+
+    <aside class="nota__ficha">
+      <p class="etiqueta-campo">datos de campo</p>
+      <dl class="ficha campo">
+        <div><dt>etapa</dt><dd>{est.label}</dd></div>
+        <div><dt>dominio</dt><dd>{d.dominio}</dd></div>
+        {fmt(d.plantada) && (
+          <div><dt>plantada</dt><dd>{fmt(d.plantada)}</dd></div>
+        )}
+        {fmt(d.podada) && (
+          <div><dt>última poda</dt><dd>{fmt(d.podada)}</dd></div>
+        )}
+        <div>
+          <dt>hifas</dt>
+          <dd>{salientes.length + backlinks.length}</dd>
+        </div>
+      </dl>
+    </aside>
+  </article>
+
+  <section class="lamina" aria-labelledby="titulo-lamina">
+    <div class="contenedor lamina__encabezado">
+      <h2 id="titulo-lamina" class="etiqueta-campo">dónde vive en la red</h2>
+      <p class="campo lamina__pista">{d.titulo} está marcada</p>
+    </div>
+    <MapaMicelio activo={entrada.id} />
+  </section>
+</Base>
+
+<style>
+  .nota {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 250px;
+    gap: 3.5rem;
+    align-items: start;
+    padding-block: 2.5rem 4rem;
+  }
+
+  .volver {
+    font-size: 0.78rem;
+    color: var(--tinta-suave);
+  }
+  .volver:hover { color: var(--ambar-hondo); }
+
+  .nota__encabezado {
+    display: flex;
+    gap: 1.1rem;
+    align-items: flex-start;
+    margin-top: 1.4rem;
+  }
+  .nota__glifo {
+    padding-top: 0.35rem;
+    flex-shrink: 0;
+  }
+  .nota__titulo {
+    font-size: clamp(1.9rem, 4vw, 2.7rem);
+    margin: 0.25rem 0 0;
+  }
+  .nota__etapa {
+    margin: 0.9rem 0 1.8rem;
+    color: var(--tinta-suave);
+    font-style: italic;
+    font-size: 0.98rem;
+    max-width: 52ch;
+  }
+
+  .cosecha {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 0.9rem;
+    border: 1px solid var(--ambar-hondo);
+    border-left-width: 4px;
+    padding: 0.75rem 1rem;
+    margin-bottom: 2rem;
+    font-size: 0.86rem;
+    background: rgba(196, 135, 26, 0.09);
+  }
+  .cosecha__sello {
+    text-transform: uppercase;
+    letter-spacing: 0.16em;
+    font-weight: 700;
+    font-size: 0.7rem;
+    color: var(--ambar-hondo);
+  }
+
+  .micelio-local {
+    margin-top: 3.2rem;
+    padding-top: 1.4rem;
+    border-top: 1px solid var(--filete);
+    display: flex;
+    flex-wrap: wrap;
+    gap: 2.5rem;
+  }
+  .micelio-local__bloque ul {
+    list-style: none;
+    padding: 0;
+    margin: 0.7rem 0 0;
+  }
+  .micelio-local__bloque li { margin: 0.35rem 0; }
+  .micelio-local__bloque a {
+    font-family: var(--fuente-campo);
+    font-size: 0.86rem;
+  }
+  .micelio-local__bloque a:hover { color: var(--ambar-hondo); }
+
+  /* Ficha lateral: la etiqueta del pliego, tipeada. */
+  .nota__ficha {
+    position: sticky;
+    top: 1.5rem;
+    border: 1px solid var(--filete);
+    background: var(--papel-alto);
+    padding: 1.1rem 1.2rem 1.2rem;
+  }
+  .ficha {
+    margin: 0.8rem 0 0;
+    display: grid;
+    gap: 0.5rem;
+    font-size: 0.78rem;
+  }
+  .ficha > div {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 0.1rem;
+  }
+  .ficha dt {
+    color: var(--tinta-suave);
+    text-transform: uppercase;
+    letter-spacing: 0.11em;
+    font-size: 0.68rem;
+  }
+  .ficha dd { margin: 0; }
+
+  .lamina {
+    padding-block: 1.8rem 2.2rem;
+    border-block: 1px solid var(--filete);
+  }
+  .lamina__encabezado {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 1rem;
+    flex-wrap: wrap;
+    margin-bottom: 0.9rem;
+  }
+  .lamina__pista {
+    font-size: 0.76rem;
+    color: var(--tinta-suave);
+  }
+
+  @media (max-width: 860px) {
+    .nota {
+      grid-template-columns: 1fr;
+      gap: 2rem;
+    }
+    .nota__ficha { position: static; }
+  }
+</style>

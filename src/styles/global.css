@@ -1,0 +1,353 @@
+@import 'tailwindcss';
+
+/* ============================================================
+   Lámina de guía de campo micológica.
+   Los tokens se nombran por rol (papel / tinta / ámbar), no por
+   color: la paleta de este sitio ya se dio vuelta más de una vez.
+   ============================================================ */
+:root {
+  /* --- la lámina --- */
+  --papel: #e8dcc4;          /* manila envejecido, con cuerpo */
+  --papel-alto: #f0e7d3;     /* el aire sobre la superficie, y los pliegos */
+  --tierra: #dccca9;         /* subsuelo apenas bajo la línea */
+  --tierra-honda: #cbb78f;   /* lo más hondo, donde vive la espora */
+
+  /* --- la tinta --- */
+  --tinta: #2a2018;          /* 11.7:1 sobre papel */
+  --tinta-suave: #6b5b45;    /* 4.8:1 — texto secundario */
+  --tinta-hifa: rgba(42, 32, 24, 0.46);   /* filamentos */
+  --filete: rgba(42, 32, 24, 0.28);       /* bordes de pliego */
+  --filete-tenue: rgba(42, 32, 24, 0.14);
+
+  /* --- lo único que brilla ---
+     El ámbar da 2.26:1 sobre papel: sirve como relleno gráfico (siempre
+     con contorno de tinta que carga el contraste) pero NO como texto.
+     Por eso hay una versión honda para cuando el ámbar tiene que leerse. */
+  --ambar: #c4871a;          /* relleno de sombreros, sellos de cosecha */
+  --ambar-hondo: #7e5209;    /* 5.0:1 — el ámbar cuando es texto */
+
+  /* --- lo que crece, con cuentagotas --- */
+  --musgo: #5e6b3a;
+
+  --fuente-especimen: 'Fraunces', Georgia, serif;
+  --fuente-cuerpo: 'Newsreader', Georgia, serif;
+  --fuente-campo: 'Courier Prime', ui-monospace, 'Courier New', monospace;
+
+  --medida: 66ch;
+  --ancho-contenedor: 1180px;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  background: var(--papel);
+  color: var(--tinta);
+  font-family: var(--fuente-cuerpo);
+  -webkit-font-smoothing: antialiased;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  overflow-x: hidden;
+  position: relative;
+  font-size: 1.05rem;
+  line-height: 1.6;
+}
+
+/* Grano de papel: feTurbulence inline, sin assets externos.
+   Va sobre todo, no intercepta el mouse, y multiplica muy suave. */
+body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 9999;
+  opacity: 0.05;
+  mix-blend-mode: multiply;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23g)'/%3E%3C/svg%3E");
+}
+
+::selection {
+  background: var(--ambar);
+  color: var(--tinta);
+}
+
+h1, h2, h3 {
+  font-family: var(--fuente-especimen);
+  font-weight: 700;
+  line-height: 1.12;
+  letter-spacing: -0.015em;
+  margin: 0;
+}
+
+/* Datos de campo: fechas, dominio, cosecha. Registro de herbario.
+   Courier Prime adelgaza mucho abajo de 0.78rem — no bajar de ahí. */
+.campo {
+  font-family: var(--fuente-campo);
+  font-size: 0.82rem;
+  letter-spacing: 0.01em;
+}
+
+.etiqueta-campo {
+  font-family: var(--fuente-campo);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--tinta-suave);
+}
+
+.contenedor {
+  max-width: var(--ancho-contenedor);
+  margin-inline: auto;
+  padding-inline: 1.5rem;
+}
+
+a {
+  color: var(--tinta);
+  text-decoration: none;
+}
+a:hover {
+  color: var(--ambar-hondo);
+}
+
+/* Foco de teclado visible en toda la lámina, incluso dentro del SVG. */
+:focus-visible {
+  outline: 2px solid var(--ambar-hondo);
+  outline-offset: 3px;
+  border-radius: 1px;
+}
+
+/* wikilinks: hifas dentro del texto */
+.wikilink {
+  border-bottom: 1px solid var(--filete);
+}
+.wikilink:hover {
+  border-bottom-color: var(--ambar-hondo);
+}
+.wikilink--nueva {
+  color: var(--tinta-suave);
+  border-bottom: 1px dashed var(--filete);
+}
+
+/* El contenedor es más ancho que la medida de lectura: el texto se limita
+   solo y las figuras se quedan con todo el ancho disponible. */
+.prosa {
+  max-width: 46rem;
+  line-height: 1.72;
+  font-size: 1.08rem;
+}
+.prosa > p,
+.prosa > ul,
+.prosa > ol,
+.prosa > h2,
+.prosa > h3 {
+  max-width: var(--medida);
+}
+.prosa p { margin: 1.15em 0; }
+.prosa h2 {
+  margin: 2.4em 0 0.6em;
+  font-size: 1.45rem;
+}
+.prosa h3 {
+  margin: 2em 0 0.35em;
+  font-size: 1.12rem;
+  font-weight: 600;
+}
+/* El reset de Tailwind pone list-style:none en todas las listas: acá las
+   viñetas son parte del texto, así que se reponen. */
+.prosa ul { padding-left: 1.2em; list-style: disc; }
+.prosa ol { padding-left: 1.3em; list-style: decimal; }
+.prosa li { margin: 0.45em 0; }
+.prosa li::marker { color: var(--tinta-suave); }
+.prosa strong { font-weight: 600; }
+.prosa em { font-style: italic; color: var(--tinta-suave); }
+
+/* La entrada del ensayo: el párrafo que sostiene todo lo que viene. */
+.prosa .entrada {
+  font-size: 1.24rem;
+  line-height: 1.5;
+  color: var(--tinta-suave);
+  /* Medida propia: 66ch escala con el cuerpo de letra, y a este tamaño
+     dejaba la bajada MÁS ancha que el texto que sostiene. */
+  max-width: 48ch;
+}
+
+/* ---- Láminas de datos dentro de una nota ----
+   Un ensayo largo trae figuras. Viven en HTML crudo dentro del .md: Astro lo
+   renderiza tal cual, sin necesidad de MDX ni una dependencia más. */
+.prosa figure {
+  margin: 2.8rem 0;
+}
+.prosa figure svg {
+  width: 100%;
+  height: auto;
+  display: block;
+  overflow: visible;
+}
+.prosa .fig-titulo {
+  font-family: var(--fuente-especimen);
+  font-weight: 600;
+  font-size: 0.98rem;
+  margin: 0 0 1rem;
+  max-width: none;
+}
+.prosa figcaption {
+  font-family: var(--fuente-campo);
+  font-size: 0.76rem;
+  line-height: 1.6;
+  color: var(--tinta-suave);
+  margin-top: 0.85rem;
+  padding-top: 0.7rem;
+  border-top: 1px solid var(--filete-tenue);
+}
+/* Pliego de datos: mismo tratamiento que las fichas de espécimen. */
+.prosa .pliego-dato {
+  background: var(--papel-alto);
+  border: 1px solid var(--filete);
+  padding: 1.6rem 1.5rem;
+}
+
+.prosa table {
+  width: 100%;
+  border-collapse: collapse;
+  font-family: var(--fuente-campo);
+  font-size: 0.82rem;
+}
+.prosa th {
+  text-align: left;
+  font-weight: 700;
+  color: var(--tinta-suave);
+  padding: 0.5rem 0.6rem;
+  border-bottom: 1px solid var(--tinta);
+  font-size: 0.68rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+.prosa td {
+  padding: 0.6rem;
+  border-bottom: 1px solid var(--filete-tenue);
+}
+.prosa .num { text-align: right; }
+.prosa .centro { text-align: center; }
+.prosa .apagado { color: var(--tinta-suave); }
+.prosa .construye { color: var(--ambar-hondo); font-weight: 700; }
+.prosa tr.total td {
+  border-bottom: none;
+  border-top: 1px solid var(--tinta);
+}
+
+/* Primitivas de gráfico. Sin paleta propia: acá el ámbar significa "lo que
+   construye" y la tinta significa todo lo demás, igual que en el mapa. Un
+   chart de tres colores rompería esa regla. */
+.prosa .grilla line { stroke: var(--filete-tenue); stroke-width: 1; }
+.prosa .eje { stroke: var(--tinta); stroke-width: 1; }
+.prosa .rotulo-eje {
+  font-family: var(--fuente-campo);
+  font-size: 10px;
+  fill: var(--tinta-suave);
+}
+.prosa .curva {
+  fill: none;
+  stroke: var(--tinta);
+  stroke-width: 2.2;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+}
+.prosa .curva-area { fill: var(--tinta); opacity: 0.07; }
+.prosa .hito { fill: var(--tinta); }
+.prosa .hito-linea {
+  stroke: var(--tinta);
+  stroke-width: 1;
+  stroke-dasharray: 3 3;
+  opacity: 0.5;
+}
+.prosa .anotacion {
+  font-family: var(--fuente-campo);
+  font-size: 10.5px;
+  fill: var(--tinta);
+  font-weight: 700;
+}
+.prosa .anotacion--ambar { fill: var(--ambar-hondo); }
+.prosa .barra { fill: var(--tinta); }
+.prosa .barra--construye {
+  fill: var(--ambar);
+  stroke: var(--tinta);
+  stroke-width: 1;
+}
+.prosa .cifra {
+  font-family: var(--fuente-campo);
+  font-size: 12px;
+  font-weight: 700;
+  fill: var(--tinta);
+}
+.prosa .arcos-recaman path {
+  fill: none;
+  stroke: var(--tinta);
+  stroke-width: 1.4;
+  stroke-linecap: round;
+  opacity: 0.55;
+}
+
+/* Cómo se destapó cada error: la pregunta de campo, al margen. */
+.prosa .detectado {
+  font-family: var(--fuente-campo);
+  font-size: 0.8rem;
+  line-height: 1.55;
+  color: var(--ambar-hondo);
+  margin: 0 0 1.4rem;
+  padding-left: 0.9rem;
+  border-left: 2px solid var(--ambar-hondo);
+  max-width: var(--medida);
+}
+
+.prosa .remate {
+  font-family: var(--fuente-especimen);
+  font-weight: 600;
+  font-size: 1.4rem;
+  line-height: 1.28;
+  margin: 3rem 0;
+  padding: 1.7rem 0;
+  border-top: 2px solid var(--tinta);
+  border-bottom: 2px solid var(--tinta);
+  max-width: var(--medida);
+}
+
+/* Filete con motivo de arcos: cita a Recamán sin decirlo. */
+.prosa .filete-arcos {
+  display: block;
+  margin: 3.2rem auto;
+  width: 120px;
+  height: 22px;
+  /* los arcos se dibujan hacia arriba desde y=18 y se salen del viewBox */
+  overflow: visible;
+}
+.prosa .filete-arcos path {
+  fill: none;
+  stroke: var(--filete);
+  stroke-width: 1.4;
+  stroke-linecap: round;
+}
+
+.prosa .fin {
+  font-family: var(--fuente-campo);
+  font-size: 0.72rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--tinta-suave);
+  text-align: center;
+  margin: 4rem 0 0;
+  padding-top: 1.8rem;
+  border-top: 1px solid var(--filete-tenue);
+  max-width: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation: none !important;
+    transition: none !important;
+  }
+}

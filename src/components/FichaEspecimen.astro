@@ -1,0 +1,120 @@
+---
+import GlifoEstado from './GlifoEstado.astro';
+import { ESTADOS } from '../lib/estados';
+import type { Concepto } from '../lib/grafo';
+
+interface Props {
+  concepto: Concepto;
+}
+const { concepto: c } = Astro.props;
+const est = ESTADOS[c.estado];
+
+const fmt = (d?: Date) =>
+  d ? d.toLocaleDateString('es', { year: 'numeric', month: 'short' }) : null;
+---
+
+{/* Pliego de herbario: esquinas rectas, filete de tinta, etiqueta tipeada
+    abajo. Sin sombra — la profundidad la da el papel, no un box-shadow. */}
+<article class="pliego">
+  <a href={`/conceptos/${c.slug}`} class="pliego__link">
+    <div class="pliego__lamina">
+      <GlifoEstado estado={c.estado} tamano={46} />
+    </div>
+
+    <h3 class="pliego__nombre">{c.titulo}</h3>
+    {c.resumen && <p class="pliego__resumen">{c.resumen}</p>}
+
+    <dl class="pliego__etiqueta campo">
+      <div>
+        <dt>etapa</dt>
+        <dd>{est.label}</dd>
+      </div>
+      <div>
+        <dt>dominio</dt>
+        <dd>{c.dominio}</dd>
+      </div>
+      {fmt(c.plantada) && (
+        <div>
+          <dt>plantada</dt>
+          <dd>{fmt(c.plantada)}</dd>
+        </div>
+      )}
+      {c.cosecha && (
+        <div class="pliego__cosecha">
+          <dt>cosecha</dt>
+          <dd>{c.cosecha}</dd>
+        </div>
+      )}
+    </dl>
+  </a>
+</article>
+
+<style>
+  .pliego {
+    background: var(--papel-alto);
+    border: 1px solid var(--filete);
+    /* el filete interior imita el doble margen del pliego de herbario */
+    box-shadow: inset 0 0 0 1px var(--papel-alto), inset 0 0 0 2px var(--filete-tenue);
+    transition: border-color 0.25s ease;
+  }
+  .pliego:hover {
+    border-color: var(--tinta);
+  }
+
+  .pliego__link {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    padding: 1.5rem 1.4rem 1.2rem;
+  }
+
+  .pliego__lamina {
+    display: flex;
+    justify-content: center;
+    padding-block: 0.2rem 1.1rem;
+  }
+
+  .pliego__nombre {
+    font-size: 1.32rem;
+    font-weight: 600;
+    line-height: 1.18;
+  }
+  .pliego__link:hover .pliego__nombre {
+    color: var(--ambar-hondo);
+  }
+
+  .pliego__resumen {
+    margin: 0.6rem 0 0;
+    color: var(--tinta-suave);
+    font-size: 0.96rem;
+    line-height: 1.55;
+    flex: 1;
+  }
+
+  .pliego__etiqueta {
+    margin: 1.4rem 0 0;
+    padding-top: 0.9rem;
+    border-top: 1px solid var(--filete-tenue);
+    display: grid;
+    gap: 0.3rem;
+    font-size: 0.76rem;
+  }
+  .pliego__etiqueta > div {
+    display: flex;
+    gap: 0.6rem;
+  }
+  .pliego__etiqueta dt {
+    color: var(--tinta-suave);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    min-width: 7.5em;
+  }
+  .pliego__etiqueta dd {
+    margin: 0;
+    color: var(--tinta);
+  }
+  .pliego__cosecha dd {
+    color: var(--ambar-hondo);
+    font-weight: 700;
+  }
+</style>

@@ -1,0 +1,141 @@
+---
+import Base from '../layouts/Base.astro';
+import MapaMicelio from '../components/MapaMicelio.astro';
+import { construirRed } from '../lib/grafo';
+import { paginaInicio } from '../lib/estructurados';
+
+const { conceptos, aristas } = await construirRed();
+const frutos = conceptos.filter((c) => c.estado === 'fruto').length;
+const jsonLd = paginaInicio(conceptos);
+---
+
+<Base
+  titulo="El Jardín — todos ven los hongos, nadie ve el micelio"
+  descripcion="La IA volvió gratis la ejecución. El criterio es lo único que se cobra. Un jardín de conceptos donde lo visible son los frutos y el valor es la red que los conecta."
+  jsonLd={jsonLd}
+>
+  <header class="contenedor portada">
+    <p class="etiqueta-campo">lámina i · corte de tierra</p>
+    <h1 class="portada__tesis">
+      Todos ven los hongos.<br />
+      Nadie ve el <em>micelio</em>.
+    </h1>
+    <p class="portada__bajada">
+      La IA volvió gratis la ejecución. Lo único que se cobra es saber qué
+      construir — y eso no vive en lo que se publica, vive en la red que hay
+      abajo.
+    </p>
+    <dl class="portada__censo campo">
+      <div><dt>especímenes</dt><dd>{conceptos.length}</dd></div>
+      <div><dt>hifas</dt><dd>{aristas.length}</dd></div>
+      <div><dt>fructificaron</dt><dd>{frutos}</dd></div>
+    </dl>
+  </header>
+
+  <section class="lamina" aria-labelledby="titulo-lamina">
+    <div class="contenedor lamina__encabezado">
+      <h2 id="titulo-lamina" class="etiqueta-campo">el micelio</h2>
+      <p class="campo lamina__pista">
+        apuntá un espécimen para seguir sus hifas por la red
+      </p>
+    </div>
+    <MapaMicelio />
+  </section>
+
+  <section class="contenedor cierre">
+    <p class="cierre__texto">
+      Los cuerpos fructíferos son la parte fácil: se ven, se comparten, se
+      copian. Lo que no se copia es el micelio — el criterio acumulado que
+      decide dónde vale la pena que algo asome.
+    </p>
+    <a href="/especimenes" class="cierre__link campo">
+      Ver el índice de especímenes →
+    </a>
+  </section>
+</Base>
+
+<style>
+  .portada {
+    padding-block: 4rem 2.5rem;
+  }
+  .portada__tesis {
+    font-size: clamp(2.4rem, 6vw, 4.4rem);
+    line-height: 1.02;
+    margin: 0.8rem 0 0;
+    max-width: 16ch;
+  }
+  .portada__tesis em {
+    font-style: italic;
+    color: var(--ambar-hondo);
+  }
+  .portada__bajada {
+    margin: 1.5rem 0 0;
+    max-width: 54ch;
+    font-size: 1.16rem;
+    line-height: 1.62;
+    color: var(--tinta-suave);
+  }
+
+  /* Censo de la lámina: el dato de campo que abre el registro. */
+  .portada__censo {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 2.2rem;
+    margin: 2.2rem 0 0;
+    padding-top: 1.2rem;
+    border-top: 1px solid var(--filete-tenue);
+    max-width: 54ch;
+  }
+  .portada__censo dt {
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.14em;
+    color: var(--tinta-suave);
+  }
+  .portada__censo dd {
+    margin: 0.25rem 0 0;
+    font-family: var(--fuente-especimen);
+    font-size: 1.8rem;
+    font-weight: 600;
+    line-height: 1;
+  }
+
+  /* La lámina se sale del contenedor: el micelio es el protagonista. */
+  .lamina {
+    margin-top: 1rem;
+    padding-block: 1.8rem 2.2rem;
+    border-block: 1px solid var(--filete);
+  }
+  .lamina__encabezado {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 1rem;
+    flex-wrap: wrap;
+    margin-bottom: 0.9rem;
+  }
+  .lamina__pista {
+    font-size: 0.76rem;
+    color: var(--tinta-suave);
+  }
+
+  .cierre {
+    padding-top: 3.5rem;
+    max-width: 760px;
+  }
+  .cierre__texto {
+    font-size: 1.14rem;
+    line-height: 1.68;
+    margin: 0;
+  }
+  .cierre__link {
+    display: inline-block;
+    margin-top: 1.6rem;
+    font-size: 0.84rem;
+    border-bottom: 1px solid var(--filete);
+    padding-bottom: 3px;
+  }
+  .cierre__link:hover {
+    border-bottom-color: var(--ambar-hondo);
+  }
+</style>

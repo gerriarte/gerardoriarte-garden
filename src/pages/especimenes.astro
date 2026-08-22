@@ -1,0 +1,119 @@
+---
+import Base from '../layouts/Base.astro';
+import FichaEspecimen from '../components/FichaEspecimen.astro';
+import { construirRed } from '../lib/grafo';
+import { ESTADOS, ORDEN_DESCENDENTE } from '../lib/estados';
+import { paginaEspecimenes } from '../lib/estructurados';
+
+const { conceptos } = await construirRed();
+
+// Agrupado por MADUREZ, no por dominio: con pocos conceptos repartidos en
+// cinco dominios, agrupar por dominio da paneles de una ficha y mucho aire
+// muerto. Por madurez empaqueta mejor y deja a la vista la única métrica de
+// salud del jardín: cuántos llegaron a fructificar.
+// El dominio sigue visible en la etiqueta de cada pliego, y el mapa ya lo
+// codifica en el eje horizontal — así las dos vistas se complementan.
+const paneles = ORDEN_DESCENDENTE.map((estado) => ({
+  estado,
+  items: conceptos
+    .filter((c) => c.estado === estado)
+    .sort((a, b) => a.titulo.localeCompare(b.titulo)),
+})).filter((p) => p.items.length > 0);
+
+const jsonLd = paginaEspecimenes(conceptos);
+---
+
+<Base
+  titulo="Especímenes — El Jardín"
+  descripcion="Índice de conceptos agrupados por etapa de maduración. La puerta de entrada para leer, no para explorar."
+  jsonLd={jsonLd}
+>
+  <header class="contenedor cabecera">
+    <p class="etiqueta-campo">lámina ii · índice</p>
+    <h1 class="cabecera__titulo">Especímenes</h1>
+    <p class="cabecera__bajada">
+      El mismo jardín, ordenado para leer. Cada pliego registra su etapa, su
+      dominio y —si dio— su cosecha.
+      <a href="/" class="cabecera__link">Volver al micelio →</a>
+    </p>
+  </header>
+
+  {
+    paneles.map((p) => (
+      <section class="contenedor panel">
+        <div class="panel__cabecera">
+          <h2 class="panel__titulo">{ESTADOS[p.estado].plural}</h2>
+          <span class="campo panel__cuenta">
+            {p.items.length} {p.items.length === 1 ? 'espécimen' : 'especímenes'}
+          </span>
+        </div>
+        <p class="panel__glosa">{ESTADOS[p.estado].descripcion}</p>
+        <div class="panel__grilla">
+          {p.items.map((c) => (
+            <FichaEspecimen concepto={c} />
+          ))}
+        </div>
+      </section>
+    ))
+  }
+</Base>
+
+<style>
+  .cabecera {
+    padding-block: 3.5rem 1rem;
+  }
+  .cabecera__titulo {
+    font-size: clamp(2.2rem, 5vw, 3.4rem);
+    margin: 0.7rem 0 0;
+  }
+  .cabecera__bajada {
+    margin: 1.1rem 0 0;
+    max-width: 58ch;
+    color: var(--tinta-suave);
+    font-size: 1.06rem;
+    line-height: 1.6;
+  }
+  .cabecera__link {
+    color: var(--ambar-hondo);
+    border-bottom: 1px solid var(--filete);
+    padding-bottom: 2px;
+    white-space: nowrap;
+  }
+
+  .panel {
+    padding-top: 3rem;
+  }
+  .panel__cabecera {
+    display: flex;
+    align-items: baseline;
+    gap: 1rem;
+    padding-bottom: 0.7rem;
+    border-bottom: 1px solid var(--tinta);
+  }
+  .panel__titulo {
+    font-size: 1.5rem;
+    font-weight: 600;
+  }
+  .panel__glosa {
+    margin: 0.7rem 0 0;
+    color: var(--tinta-suave);
+    font-size: 0.95rem;
+    font-style: italic;
+    max-width: 60ch;
+  }
+  .panel__cuenta {
+    margin-left: auto;
+    font-size: 0.74rem;
+    color: var(--tinta-suave);
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+  }
+
+  .panel__grilla {
+    margin-top: 1.5rem;
+    display: grid;
+    gap: 1.4rem;
+    grid-template-columns: repeat(auto-fill, minmax(290px, 1fr));
+    align-items: stretch;
+  }
+</style>

@@ -1,0 +1,233 @@
+---
+import '../styles/global.css';
+import { SITIO, AUTOR, REDES_ACTIVAS, absoluta } from '../lib/sitio';
+
+interface Props {
+  titulo: string;
+  descripcion?: string;
+  /** 'article' en las notas, 'website' en el resto. */
+  tipo?: 'website' | 'article';
+  /** Ruta de la imagen para compartir. Por defecto, la del sitio. */
+  imagen?: string;
+  publicada?: Date;
+  modificada?: Date;
+  /** Datos estructurados de la página. Se serializan en el <head>. */
+  jsonLd?: Record<string, unknown> | Record<string, unknown>[];
+}
+const {
+  titulo,
+  descripcion = SITIO.descripcion,
+  tipo = 'website',
+  imagen,
+  publicada,
+  modificada,
+  jsonLd,
+} = Astro.props;
+
+const ruta = Astro.url.pathname;
+const enMapa = ruta === '/';
+const enEspecimenes = ruta.startsWith('/especimenes');
+
+/* Canónica sin barra final: una sola URL por documento.
+   Astro emite `/especimenes/` pero los links internos y Vercel usan
+   `/especimenes`. Si la canónica apunta a la variante que redirige, se
+   desperdicia la señal. Se normaliza sin barra (la raíz queda como está). */
+const canonica = absoluta(ruta.replace(/(.)\/$/, '$1'));
+const ogImagen = absoluta(imagen ?? '/og/sitio.png');
+
+/**
+ * `</script>` dentro del JSON cerraría la etiqueta antes de tiempo.
+ * Escapar `<` es la forma estándar de evitarlo.
+ */
+const serializar = (dato: unknown) =>
+  JSON.stringify(dato).replace(/</g, '\\u003c');
+---
+
+<!doctype html>
+<html lang={SITIO.idioma}>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{titulo}</title>
+    <meta name="description" content={descripcion} />
+    <link rel="canonical" href={canonica} />
+
+    {/* Permitir fragmentos y vistas previas grandes: sin esto Google recorta
+        el snippet y las respuestas generativas citan menos contexto. */}
+    <meta
+      name="robots"
+      content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1"
+    />
+
+    <meta property="og:type" content={tipo} />
+    <meta property="og:site_name" content={SITIO.nombre} />
+    <meta property="og:locale" content={SITIO.locale} />
+    <meta property="og:title" content={titulo} />
+    <meta property="og:description" content={descripcion} />
+    <meta property="og:url" content={canonica} />
+    <meta property="og:image" content={ogImagen} />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content={`${titulo} — ${SITIO.nombre}`} />
+    {publicada && (
+      <meta property="article:published_time" content={publicada.toISOString()} />
+    )}
+    {modificada && (
+      <meta property="article:modified_time" content={modificada.toISOString()} />
+    )}
+    {tipo === 'article' && <meta property="article:author" content={AUTOR.nombre} />}
+
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content={titulo} />
+    <meta name="twitter:description" content={descripcion} />
+    <meta name="twitter:image" content={ogImagen} />
+
+    <meta name="author" content={AUTOR.nombre} />
+    <meta name="theme-color" content="#e8dcc4" />
+
+    <link
+      rel="alternate"
+      type="application/rss+xml"
+      title={`${SITIO.nombre} — conceptos`}
+      href={absoluta('/rss.xml')}
+    />
+    <link rel="sitemap" href="/sitemap-index.xml" />
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Courier+Prime:wght@400;700&family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,400&display=swap"
+    />
+
+    {jsonLd && (
+      <script type="application/ld+json" set:html={serializar(jsonLd)} />
+    )}
+  </head>
+  <body>
+    <a href="#contenido" class="saltar campo">Saltar al contenido</a>
+
+    <nav class="barra">
+      <div class="contenedor barra__interior">
+        <a href="/" class="marca">El Jardín</a>
+        <div class="barra__links campo">
+          <a href="/" class:list={['barra__link', enMapa && 'es-actual']}>micelio</a>
+          <a
+            href="/especimenes"
+            class:list={['barra__link', enEspecimenes && 'es-actual']}>especímenes</a
+          >
+          <a href="mailto:ger@abralatam.com" class="barra__link">contacto</a>
+        </div>
+      </div>
+    </nav>
+
+    <main id="contenido">
+      <slot />
+    </main>
+
+    <footer class="pie">
+      <div class="contenedor pie__interior campo">
+        <span>Gerardo Riarte · cultivando en público</span>
+        <span class="pie__nota">
+          La ejecución se volvió gratis. Lo que se cobra es saber qué construir.
+        </span>
+        {REDES_ACTIVAS.length > 0 && (
+          <span class="pie__enlaces">
+            {REDES_ACTIVAS.map((r) => (
+              <a href={r.url} rel="me noopener" target="_blank">
+                {r.nombre.toLowerCase()}
+              </a>
+            ))}
+          </span>
+        )}
+        <span class="pie__enlaces">
+          <a href="/rss.xml">rss</a>
+          <a href="/llms.txt">llms.txt</a>
+        </span>
+      </div>
+    </footer>
+  </body>
+</html>
+
+<style>
+  .saltar {
+    position: absolute;
+    left: -9999px;
+    top: 0;
+    background: var(--papel-alto);
+    color: var(--tinta);
+    padding: 0.6rem 1rem;
+    border: 1px solid var(--tinta);
+    z-index: 10000;
+  }
+  .saltar:focus {
+    left: 1rem;
+    top: 1rem;
+  }
+
+  .barra {
+    border-bottom: 1px solid var(--filete);
+  }
+  .barra__interior {
+    display: flex;
+    gap: 1.5rem;
+    align-items: baseline;
+    padding-block: 1.35rem;
+  }
+  .marca {
+    font-family: var(--fuente-especimen);
+    font-weight: 700;
+    font-size: 1.15rem;
+    letter-spacing: -0.01em;
+  }
+  .marca:hover {
+    color: var(--ambar-hondo);
+  }
+  .barra__links {
+    margin-left: auto;
+    display: flex;
+    gap: 1.5rem;
+    font-size: 0.82rem;
+  }
+  .barra__link {
+    padding-bottom: 2px;
+    border-bottom: 1px solid transparent;
+  }
+  .barra__link:hover {
+    border-bottom-color: var(--ambar-hondo);
+  }
+  .barra__link.es-actual {
+    border-bottom-color: var(--tinta);
+  }
+
+  main {
+    padding-bottom: 5rem;
+  }
+
+  .pie {
+    border-top: 1px solid var(--filete);
+  }
+  .pie__interior {
+    display: flex;
+    justify-content: space-between;
+    gap: 1.5rem;
+    flex-wrap: wrap;
+    padding-block: 2rem;
+    color: var(--tinta-suave);
+    font-size: 0.76rem;
+  }
+  .pie__nota {
+    max-width: 46ch;
+  }
+  .pie__enlaces {
+    display: flex;
+    gap: 1.1rem;
+  }
+  .pie__enlaces a {
+    color: var(--tinta-suave);
+    border-bottom: 1px solid var(--filete-tenue);
+  }
+  .pie__enlaces a:hover {
+    color: var(--ambar-hondo);
+  }
+</style>

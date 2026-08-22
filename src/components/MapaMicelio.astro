@@ -1,0 +1,539 @@
+---
+import { construirRed } from '../lib/grafo';
+import { tenderMicelio, type Lamina } from '../lib/micelio';
+import { GLIFOS } from '../lib/glifos';
+import { ESTADOS } from '../lib/estados';
+
+interface Props {
+  /** Slug a dejar resaltado de forma permanente (en la página de una nota). */
+  activo?: string;
+}
+const { activo } = Astro.props;
+
+const { conceptos, aristas, dominios } = await construirRed();
+const laminas = tenderMicelio(conceptos, aristas, dominios);
+
+// Interlineado del rótulo según lámina.
+const LH: Record<Lamina['modo'], number> = { ancho: 22, alto: 25 };
+
+/**
+ * Y de cada renglón. Los rótulos de los frutos van ARRIBA del sombrero, así
+ * que crecen hacia arriba; los de costado crecen hacia abajo.
+ */
+const yLinea = (lam: Lamina, rot: { y: number; ancla: string; lineas: string[] }, i: number) =>
+  rot.ancla === 'middle'
+    ? rot.y - (rot.lineas.length - 1 - i) * LH[lam.modo]
+    : rot.y + i * LH[lam.modo];
+---
+
+<figure class="corte" data-activo={activo ?? ''}>
+  {
+    laminas.map((lam) => (
+      <div class={`hoja hoja--${lam.modo}`}>
+        <svg
+          viewBox={`0 0 ${lam.lienzo.ancho} ${lam.lienzo.alto}`}
+          role="group"
+          aria-label="Corte de tierra: los conceptos como micelio, a más profundidad cuanto menos maduros. Los cuerpos fructíferos asoman sobre la superficie."
+        >
+          <defs>
+            <linearGradient id={`perfil-suelo-${lam.modo}`} x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#dccca9" stop-opacity="0.55" />
+              <stop offset="55%" stop-color="#d3c199" stop-opacity="0.7" />
+              <stop offset="100%" stop-color="#cbb78f" stop-opacity="0.9" />
+            </linearGradient>
+            <linearGradient id={`luz-aire-${lam.modo}`} x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#f2eada" stop-opacity="0.9" />
+              <stop offset="100%" stop-color="#f0e7d3" stop-opacity="0.25" />
+            </linearGradient>
+          </defs>
+
+          {/* --- las dos zonas del corte --- */}
+          <rect
+            x="0"
+            y="0"
+            width={lam.lienzo.ancho}
+            height={lam.lienzo.superficie}
+            fill={`url(#luz-aire-${lam.modo})`}
+          />
+          <rect
+            x="0"
+            y={lam.lienzo.superficie}
+            width={lam.lienzo.ancho}
+            height={lam.lienzo.alto - lam.lienzo.superficie}
+            fill={`url(#perfil-suelo-${lam.modo})`}
+          />
+
+          {/* --- reglas de estrato (solo en la vertical) --- */}
+          <g class="reglas" aria-hidden="true">
+            {lam.guias.filter((g) => g.regla).map((g) => <path d={g.regla} />)}
+          </g>
+
+          {/* --- la línea de superficie y su rayado --- */}
+          <path class="superficie" d={lam.superficie} />
+          <g class="rayado" aria-hidden="true">
+            {lam.rayado.map((d) => <path d={d} />)}
+          </g>
+
+          {/* --- rootlets ambientales: hifas que mueren en la nada.
+                  En dos grupos para que respiren desfasados. --- */}
+          <g class="rootlets rootlets--a" aria-hidden="true">
+            {lam.nodos.filter((_, i) => i % 2 === 0).flatMap((n) => n.rootlets).map((d) => <path d={d} />)}
+          </g>
+          <g class="rootlets rootlets--b" aria-hidden="true">
+            {lam.nodos.filter((_, i) => i % 2 === 1).flatMap((n) => n.rootlets).map((d) => <path d={d} />)}
+          </g>
+
+          {/* --- las hifas que conectan conceptos: el micelio real --- */}
+          <g class="hifas">
+            {lam.hifas.map((h) => (
+              <g class="hifa" data-a={h.desde} data-b={h.hasta}>
+                <path class="hifa__filamento" d={h.d} />
+                <path class="hifa__rama" d={h.rama} />
+                {/* El nutriente que sube. pathLength normaliza cada filamento
+                    a 100, así el mismo dasharray sirve para todos y no hay que
+                    medir largos en JS. */}
+                <path
+                  class="hifa__savia"
+                  d={h.d}
+                  pathLength="100"
+                  style={`--dur:${h.duracion}s; --demora:-${h.demora}s`}
+                />
+              </g>
+            ))}
+          </g>
+
+          {/* --- los nodos --- */}
+          <g class="nodos">
+            {lam.nodos.map((n) => {
+              const g = GLIFOS[n.estado];
+              return (
+                <a
+                  href={`/conceptos/${n.slug}`}
+                  class="nodo"
+                  data-slug={n.slug}
+                  data-estado={n.estado}
+                  aria-label={`${n.titulo} — ${ESTADOS[n.estado].label}, dominio ${n.dominio}`}
+                >
+                  {n.anatomia && (
+                    <g class="fruto">
+                      <path class="fruto__tallo" d={n.anatomia.tallo} />
+                      <path class="fruto__sombrero" d={n.anatomia.sombrero} />
+                      {/* Lo que llega por las hifas: el sombrero toma luz. */}
+                      <path class="fruto__savia" d={n.anatomia.sombrero} />
+                      <g class="fruto__laminillas">
+                        {n.anatomia.laminillas.map((d) => <path d={d} />)}
+                      </g>
+                    </g>
+                  )}
+
+                  {!n.anatomia && (
+                    <g class="marca" transform={`translate(${n.x} ${n.y}) scale(1.75)`}>
+                      {g.trazos.map((d) => <path class="marca__trazo" d={d} />)}
+                      {g.puntos?.map((p) => (
+                        <circle class="marca__punto" cx={p.cx} cy={p.cy} r={p.r} />
+                      ))}
+                    </g>
+                  )}
+
+                  {/* plomada al rótulo, como en una lámina de campo */}
+                  <path class="plomada" d={n.plomada} />
+
+                  {/* zona de puntería: los glifos son finos para apuntarles.
+                      En táctil el objetivo tiene que ser cómodo. */}
+                  <circle
+                    class="area"
+                    cx={n.anatomia ? n.anatomia.cx : n.x}
+                    cy={n.anatomia ? n.anatomia.baseY : n.y}
+                    r={lam.modo === 'alto' ? 44 : 30}
+                  />
+
+                  <text class="rotulo" x={n.rotulo.x} text-anchor={n.rotulo.ancla}>
+                    {n.rotulo.lineas.map((linea, i) => (
+                      <tspan x={n.rotulo.x} y={yLinea(lam, n.rotulo, i)}>
+                        {linea}
+                      </tspan>
+                    ))}
+                  </text>
+
+                  {/* En vertical el dominio ya no es posición: se imprime. */}
+                  {n.rotulo.tag && (
+                    <text
+                      class="tag"
+                      x={n.rotulo.x}
+                      y={yLinea(lam, n.rotulo, n.rotulo.lineas.length - 1) + 21}
+                      text-anchor={n.rotulo.ancla}
+                    >
+                      {n.rotulo.tag}
+                    </text>
+                  )}
+                </a>
+              );
+            })}
+          </g>
+
+          {/* --- rótulos de dominio a pie de lámina (solo panorámica) --- */}
+          <g class="dominios" aria-hidden="true">
+            {lam.pie.map((p) => (
+              <text x={p.x} y={p.y} text-anchor="middle">{p.texto}</text>
+            ))}
+          </g>
+
+          {/* --- escala / estratos --- */}
+          <g class="escala" aria-hidden="true">
+            {lam.guias.map((g) => (
+              <text
+                class={g.hito ? 'escala__hito' : undefined}
+                x={g.x}
+                y={g.y}
+                text-anchor={g.ancla}
+              >
+                {g.texto}
+              </text>
+            ))}
+          </g>
+        </svg>
+      </div>
+    ))
+  }
+
+  <figcaption class="leyenda campo">
+    <span class="solo-ancho">profundidad = madurez · horizontal = dominio</span>
+    <span class="solo-alto">se baja por los estratos: cuanto más hondo, menos maduro</span>
+    <span>·</span>
+    <span>las hifas son las conexiones entre conceptos</span>
+  </figcaption>
+</figure>
+
+<style>
+  .corte {
+    margin: 0;
+    width: 100%;
+  }
+  svg {
+    width: 100%;
+    height: auto;
+    display: block;
+  }
+
+  /* La lámina vertical solo existe en pantallas angostas, y viceversa.
+     display:none las saca también del árbol de accesibilidad y del orden
+     de tabulación, así que los 6 nodos nunca se anuncian dos veces. */
+  .hoja--alto { display: none; }
+  .solo-alto { display: none; }
+
+  @media (max-width: 900px) {
+    .hoja--ancho { display: none; }
+    .hoja--alto { display: block; }
+    .solo-ancho { display: none; }
+    .solo-alto { display: inline; }
+  }
+
+  /* --- el suelo --- */
+  .superficie {
+    fill: none;
+    stroke: var(--tinta);
+    stroke-width: 1.6;
+  }
+  .rayado path {
+    fill: none;
+    stroke: var(--tinta);
+    stroke-width: 0.9;
+    opacity: 0.34;
+    stroke-linecap: round;
+  }
+  .reglas path {
+    fill: none;
+    stroke: var(--tinta);
+    stroke-width: 0.8;
+    opacity: 0.2;
+    stroke-dasharray: 3 5;
+  }
+
+  /* --- micelio ambiental --- */
+  .rootlets path {
+    fill: none;
+    stroke: var(--tinta-hifa);
+    stroke-width: 0.95;
+    stroke-linecap: round;
+    opacity: 0.62;
+  }
+
+  /* --- hifas de conexión --- */
+  .hifa__filamento,
+  .hifa__rama {
+    fill: none;
+    stroke: var(--tinta-hifa);
+    stroke-linecap: round;
+    transition: stroke 0.35s ease, stroke-width 0.35s ease, opacity 0.35s ease;
+  }
+  .hifa__filamento { stroke-width: 1.7; }
+  .hifa__rama { stroke-width: 0.85; opacity: 0.7; }
+
+  /* ---------------------------------------------------------------
+     La savia. Un tramo corto de trazo que recorre el filamento desde el
+     extremo menos maduro hacia el más maduro: el nutriente que sube a
+     alimentar al cuerpo fructífero.
+
+     Con pathLength="100" el período del dasharray iguala al largo del
+     trazo, así que hay exactamente UN destello a la vez por hifa y el
+     ciclo cierra sin salto. dashoffset 100 -> 0 lo mueve hacia adelante.
+     --------------------------------------------------------------- */
+  .hifa__savia {
+    fill: none;
+    stroke: var(--ambar);
+    stroke-width: 2.6;
+    stroke-linecap: round;
+    stroke-dasharray: 7 93;
+    opacity: 0.75;
+    animation: savia var(--dur, 8s) linear infinite;
+    animation-delay: var(--demora, 0s);
+    transition: stroke-width 0.35s ease, opacity 0.35s ease;
+  }
+  @keyframes savia {
+    from { stroke-dashoffset: 100; }
+    to   { stroke-dashoffset: 0; }
+  }
+
+  /* El sombrero toma luz cuando lo alimentan. */
+  .fruto__savia {
+    fill: #f2c86c;
+    stroke: none;
+    opacity: 0;
+    animation: nutrir 7s ease-in-out infinite;
+    pointer-events: none;
+  }
+  @keyframes nutrir {
+    0%, 62%, 100% { opacity: 0; }
+    78%           { opacity: 0.6; }
+  }
+
+  /* --- nodos --- */
+  .nodo { cursor: pointer; }
+  .area { fill: transparent; }
+
+  .marca__trazo {
+    fill: none;
+    stroke: var(--tinta);
+    stroke-width: 1.15;
+    stroke-linecap: round;
+  }
+  .marca__punto { fill: var(--tinta); }
+  .nodo[data-estado='semilla'] .marca__trazo {
+    stroke: var(--tinta-suave);
+    stroke-dasharray: 2 3.2;
+  }
+  .nodo[data-estado='flor'] .marca__punto { fill: var(--musgo); }
+
+  /* --- cuerpos fructíferos: lo único cálido, y lo único sobre tierra --- */
+  .fruto__tallo {
+    fill: var(--papel-alto);
+    stroke: var(--tinta);
+    stroke-width: 1.3;
+  }
+  .fruto__sombrero {
+    fill: var(--ambar);
+    stroke: var(--tinta);
+    stroke-width: 1.5;
+  }
+  .fruto__laminillas path {
+    fill: none;
+    stroke: var(--tinta);
+    stroke-width: 0.8;
+    opacity: 0.55;
+  }
+
+  .plomada {
+    fill: none;
+    stroke: var(--tinta);
+    stroke-width: 0.8;
+    opacity: 0.45;
+  }
+
+  .rotulo {
+    font-family: var(--fuente-especimen);
+    font-size: 19px;
+    font-weight: 600;
+    fill: var(--tinta);
+    transition: opacity 0.35s ease;
+  }
+  .nodo[data-estado='fruto'] .rotulo { font-size: 21px; }
+  .nodo[data-estado='semilla'] .rotulo { fill: var(--tinta-suave); }
+
+  .tag {
+    font-family: var(--fuente-campo);
+    font-size: 13px;
+    fill: var(--tinta-suave);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    transition: opacity 0.35s ease;
+  }
+
+  .dominios text,
+  .escala text {
+    font-family: var(--fuente-campo);
+    font-size: 15px;
+    fill: var(--tinta-suave);
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+  }
+  .escala text {
+    font-size: 13px;
+    opacity: 0.75;
+  }
+  .escala__hito {
+    fill: var(--tinta);
+    opacity: 1;
+    font-weight: 700;
+  }
+
+  /* En la lámina vertical el lienzo es angosto: el texto necesita cuerpo. */
+  .hoja--alto .rotulo { font-size: 20px; }
+  .hoja--alto .nodo[data-estado='fruto'] .rotulo { font-size: 20px; }
+  .hoja--alto .escala text { font-size: 14px; }
+
+  /* ---------------------------------------------------------------
+     La recompensa al explorar: al apuntar un hongo, el camino que su
+     micelio recorre por la red se ilumina y el resto se apaga.
+     Vale igual para el foco de teclado y para el primer toque en táctil.
+     --------------------------------------------------------------- */
+  .corte.rastreando .hifa:not(.viva) .hifa__filamento,
+  .corte.rastreando .hifa:not(.viva) .hifa__rama { opacity: 0.12; }
+  .corte.rastreando .hifa:not(.viva) .hifa__savia { opacity: 0; }
+  .corte.rastreando .rootlets path { opacity: 0.16; }
+  .corte.rastreando .nodo:not(.activo):not(.conexo) .rotulo,
+  .corte.rastreando .nodo:not(.activo):not(.conexo) .tag { opacity: 0.2; }
+  .corte.rastreando .nodo:not(.activo):not(.conexo) .marca { opacity: 0.22; }
+  .corte.rastreando .nodo:not(.activo):not(.conexo) .fruto { opacity: 0.28; }
+
+  .hifa.viva .hifa__filamento {
+    stroke: var(--ambar-hondo);
+    stroke-width: 2.1;
+  }
+  .hifa.viva .hifa__rama {
+    stroke: var(--ambar-hondo);
+    opacity: 0.9;
+  }
+  /* Al rastrear un camino, la savia de ese camino se engrosa. */
+  .hifa.viva .hifa__savia {
+    stroke-width: 4;
+    opacity: 1;
+  }
+
+  .nodo.activo .rotulo { fill: var(--ambar-hondo); }
+
+  /* nota abierta: queda marcada de forma permanente */
+  .nodo.es-activo .rotulo {
+    fill: var(--ambar-hondo);
+    text-decoration: underline;
+    text-underline-offset: 5px;
+  }
+
+  .leyenda {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 0.5rem;
+    margin-top: 1rem;
+    color: var(--tinta-suave);
+    font-size: 0.78rem;
+    text-align: center;
+  }
+
+  /* ---------------------------------------------------------------
+     Movimiento ambiental: el micelio respira. Muy poco, muy lento.
+     La media query global de reduced-motion lo apaga entero.
+     --------------------------------------------------------------- */
+  @keyframes respirar {
+    0%, 100% { transform: translate3d(0, 0, 0); opacity: 0.55; }
+    50%      { transform: translate3d(0, 2px, 0); opacity: 0.72; }
+  }
+  .rootlets--a { animation: respirar 17s ease-in-out infinite; }
+  .rootlets--b { animation: respirar 23s ease-in-out infinite reverse; }
+
+  /* La regla global apaga las animaciones, pero no alcanza acá: la savia
+     quedaría congelada como un muñón ámbar al inicio de cada hifa. Sin
+     movimiento no hay savia, así que se oculta. */
+  @media (prefers-reduced-motion: reduce) {
+    .hifa__savia,
+    .fruto__savia {
+      display: none;
+    }
+  }
+</style>
+
+<script>
+  const corte = document.querySelector<HTMLElement>('.corte');
+  if (corte) {
+    // En táctil no hay hover: el primer toque traza la red, el segundo entra.
+    const tactil = window.matchMedia('(hover: none)').matches;
+    let trazado: string | null = null;
+
+    // Solo la lámina visible tiene nodos con caja: la otra está en display:none.
+    const nodos = [...corte.querySelectorAll<SVGAElement>('.nodo')];
+    const hifas = [...corte.querySelectorAll<SVGGElement>('.hifa')];
+
+    const activo = corte.dataset.activo;
+    if (activo) {
+      corte
+        .querySelectorAll(`.nodo[data-slug="${activo}"]`)
+        .forEach((n) => n.classList.add('es-activo'));
+    }
+
+    const soltar = () => {
+      corte.classList.remove('rastreando');
+      nodos.forEach((o) => o.classList.remove('activo', 'conexo'));
+      hifas.forEach((h) => h.classList.remove('viva'));
+      trazado = null;
+    };
+
+    const rastrear = (slug: string) => {
+      soltar();
+      const vecinos = new Set<string>();
+      hifas.forEach((h) => {
+        const { a, b } = h.dataset;
+        if (a === slug) vecinos.add(b!);
+        if (b === slug) vecinos.add(a!);
+        if (a === slug || b === slug) h.classList.add('viva');
+      });
+      // Las dos láminas comparten slugs: marcar por slug sirve para ambas.
+      nodos.forEach((o) => {
+        const s = o.dataset.slug!;
+        if (s === slug) o.classList.add('activo');
+        else if (vecinos.has(s)) o.classList.add('conexo');
+      });
+      corte.classList.add('rastreando');
+      trazado = slug;
+    };
+
+    nodos.forEach((nodo) => {
+      const slug = nodo.dataset.slug!;
+
+      if (!tactil) {
+        nodo.addEventListener('mouseenter', () => rastrear(slug));
+        nodo.addEventListener('mouseleave', soltar);
+      }
+
+      // El teclado recorre la red igual que el mouse.
+      nodo.addEventListener('focus', () => rastrear(slug));
+      nodo.addEventListener('blur', soltar);
+
+      if (tactil) {
+        nodo.addEventListener('click', (e) => {
+          if (trazado !== slug) {
+            // primer toque: mostrar la red, no navegar todavía
+            e.preventDefault();
+            rastrear(slug);
+          }
+          // segundo toque sobre el mismo nodo: dejar pasar la navegación
+        });
+      }
+    });
+
+    // Tocar fuera de un nodo apaga el rastreo.
+    if (tactil) {
+      corte.addEventListener('click', (e) => {
+        if (!(e.target as Element).closest('.nodo')) soltar();
+      });
+    }
+  }
+</script>
