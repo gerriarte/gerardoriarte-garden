@@ -256,7 +256,11 @@ const jsonLd = paginaConcepto({
 
   @media (max-width: 860px) {
     .nota {
-      grid-template-columns: 1fr;
+      /* minmax(0, 1fr) y no 1fr: un `1fr` pelado deja el min-width:auto del
+         ítem, y cualquier contenido que no se reflowea —un diagrama de texto,
+         una tabla ancha— estira la columna y saca a la página entera de foco
+         con scroll horizontal. Misma defensa que en la grilla de escritorio. */
+      grid-template-columns: minmax(0, 1fr);
       gap: 2rem;
     }
     .nota__ficha { position: static; }

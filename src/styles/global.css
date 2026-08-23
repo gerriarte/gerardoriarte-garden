@@ -211,6 +211,26 @@ a:hover {
   padding: 1.6rem 1.5rem;
 }
 
+/* Diagrama de texto: una lámina más, pero dibujada con caracteres. Va en la
+   monoespaciada del sitio y no en la del navegador — si la caja de cada glifo
+   no es la misma que asumió el dibujo, las cajas del diagrama no cierran.
+   Mide 62 columnas fijas y no se reflowea, así que scrollea en su propia caja:
+   sin esto arrastra a la página entera en un teléfono. */
+.prosa pre.diagrama {
+  font-family: var(--fuente-campo);
+  font-size: 0.78rem;
+  line-height: 1.35;
+  color: var(--tinta-suave);
+  background: var(--papel-alto);
+  border: 1px solid var(--filete);
+  padding: 1.4rem 1.3rem;
+  overflow-x: auto;
+}
+.prosa pre.diagrama:focus-visible {
+  outline: 2px solid var(--tinta);
+  outline-offset: 2px;
+}
+
 .prosa table {
   width: 100%;
   border-collapse: collapse;
