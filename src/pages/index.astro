@@ -3,6 +3,7 @@ import Base from '../layouts/Base.astro';
 import MapaMicelio from '../components/MapaMicelio.astro';
 import { construirRed } from '../lib/grafo';
 import { paginaInicio } from '../lib/estructurados';
+import { SITIO } from '../lib/sitio';
 
 const { conceptos, aristas } = await construirRed();
 const frutos = conceptos.filter((c) => c.estado === 'fruto').length;
@@ -10,15 +11,32 @@ const jsonLd = paginaInicio(conceptos);
 ---
 
 <Base
-  titulo="El Jardín — todos ven los hongos, nadie ve el micelio"
+  titulo="Gerardo Riarte — criterio de marketing, cultivado en público"
   descripcion="La IA volvió gratis la ejecución. El criterio es lo único que se cobra. Un jardín de conceptos donde lo visible son los frutos y el valor es la red que los conecta."
   jsonLd={jsonLd}
 >
   <header class="contenedor portada">
     <p class="etiqueta-campo">lámina i · corte de tierra</p>
     <h1 class="portada__tesis">
-      Todos ven los hongos.<br />
-      Nadie ve el <em>micelio</em>.
+      {
+        SITIO.titular.map((linea, i) => {
+          const [antes, despues] = linea.split(SITIO.titularAcento);
+          return (
+            <>
+              {i > 0 && <br />}
+              {despues === undefined ? (
+                linea
+              ) : (
+                <>
+                  {antes}
+                  <em>{SITIO.titularAcento}</em>
+                  {despues}
+                </>
+              )}
+            </>
+          );
+        })
+      }
     </h1>
     <p class="portada__bajada">
       La IA volvió gratis la ejecución. Lo único que se cobra es saber qué
@@ -62,7 +80,7 @@ const jsonLd = paginaInicio(conceptos);
     font-size: clamp(2.4rem, 6vw, 4.4rem);
     line-height: 1.02;
     margin: 0.8rem 0 0;
-    max-width: 16ch;
+    max-width: 21ch;
   }
   .portada__tesis em {
     font-style: italic;

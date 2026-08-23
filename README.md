@@ -1,4 +1,4 @@
-# El Jardín
+# Gerardo Riarte
 
 Digital garden con metáfora micológica. Los conceptos publicados son **hongos**
 —cuerpos fructíferos, lo visible—; el valor real es el **micelio** subterráneo

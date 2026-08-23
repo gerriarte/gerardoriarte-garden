@@ -65,7 +65,7 @@ export function sitioWeb() {
     '@id': ID_SITIO,
     url: SITIO.url,
     name: SITIO.nombre,
-    alternateName: SITIO.nombreLargo,
+    alternateName: [SITIO.nombreAlterno, SITIO.nombreLargo],
     description: SITIO.descripcion,
     inLanguage: SITIO.idioma,
     author: { '@id': ID_AUTOR },

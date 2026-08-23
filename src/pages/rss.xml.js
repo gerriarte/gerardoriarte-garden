@@ -13,7 +13,7 @@ export async function GET(context) {
   const fecha = (c) => c.podada ?? c.plantada ?? new Date(0);
 
   return rss({
-    title: `${SITIO.nombre} — ${AUTOR.nombre}`,
+    title: `${SITIO.nombre} — conceptos`,
     description: SITIO.descripcion,
     site: context.site,
     trailingSlash: false,

@@ -58,15 +58,14 @@ export async function getStaticPaths() {
 export const GET: APIRoute = async ({ props }) => {
   const c = (props as any).concepto;
 
-  const titulo = c ? c.titulo : 'Todos ven los hongos.\nNadie ve el micelio.';
   const kicker = c
     ? `${ESTADOS[c.estado].label} · ${c.dominio}`
     : 'jardín de conceptos';
   const bajada = c ? (c.resumen ?? '') : SITIO.tesis;
 
-  const lineasTitulo = c
-    ? renglones(titulo, 24, 3)
-    : ['Todos ven los hongos.', 'Nadie ve el micelio.'];
+  // El titular del sitio ya viene cortado en renglones desde lib/sitio;
+  // el de un concepto se corta acá según su largo.
+  const lineasTitulo = c ? renglones(c.titulo, 24, 3) : [...SITIO.titular];
   const tamTitulo = lineasTitulo.length > 2 ? 68 : 84;
   const yTitulo = 258;
 

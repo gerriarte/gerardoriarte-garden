@@ -114,23 +114,36 @@ const yLinea = (lam: Lamina, rot: { y: number; ancla: string; lineas: string[] }
                   data-estado={n.estado}
                   aria-label={`${n.titulo} — ${ESTADOS[n.estado].label}, dominio ${n.dominio}`}
                 >
+                  {/* Orden de dibujo = orden de profundidad: el tallo y su
+                      anillo primero, después el sombrero, y encima de él las
+                      laminillas y el tramado, que son superficie del sombrero. */}
                   {n.anatomia && (
                     <g class="fruto">
                       <path class="fruto__tallo" d={n.anatomia.tallo} />
+                      <g class="fruto__fibras">
+                        {n.anatomia.fibras.map((d) => <path d={d} />)}
+                      </g>
+                      <path class="fruto__anillo" d={n.anatomia.anillo} />
                       <path class="fruto__sombrero" d={n.anatomia.sombrero} />
-                      {/* Lo que llega por las hifas: el sombrero toma luz. */}
-                      <path class="fruto__savia" d={n.anatomia.sombrero} />
+                      {/* Las laminillas van SOBRE el relleno: en vista lateral
+                          se ven en la banda del reverso, no detrás del hongo. */}
                       <g class="fruto__laminillas">
                         {n.anatomia.laminillas.map((d) => <path d={d} />)}
                       </g>
+                      <g class="fruto__trama">
+                        {n.anatomia.trama.map((d) => <path d={d} />)}
+                      </g>
+                      {/* Lo que llega por las hifas: el sombrero toma luz. */}
+                      <path class="fruto__savia" d={n.anatomia.sombrero} />
                     </g>
                   )}
 
                   {!n.anatomia && (
-                    <g class="marca" transform={`translate(${n.x} ${n.y}) scale(1.75)`}>
-                      {g.trazos.map((d) => <path class="marca__trazo" d={d} />)}
+                    <g class="nodo-glifo" transform={`translate(${n.x} ${n.y}) scale(1.75)`}>
+                      {g.cuerpo && <path class="nodo-glifo__cuerpo" d={g.cuerpo} />}
+                      {g.trazos.map((d) => <path class="nodo-glifo__trazo" d={d} />)}
                       {g.puntos?.map((p) => (
-                        <circle class="marca__punto" cx={p.cx} cy={p.cy} r={p.r} />
+                        <circle class="nodo-glifo__punto" cx={p.cx} cy={p.cy} r={p.r} />
                       ))}
                     </g>
                   )}
@@ -311,18 +324,22 @@ const yLinea = (lam: Lamina, rot: { y: number; ancla: string; lineas: string[] }
   .nodo { cursor: pointer; }
   .area { fill: transparent; }
 
-  .marca__trazo {
+  .nodo-glifo__trazo {
     fill: none;
     stroke: var(--tinta);
     stroke-width: 1.15;
     stroke-linecap: round;
   }
-  .marca__punto { fill: var(--tinta); }
-  .nodo[data-estado='semilla'] .marca__trazo {
+  .nodo-glifo__punto { fill: var(--tinta); }
+  .nodo-glifo__cuerpo {
+    fill: none;
     stroke: var(--tinta-suave);
-    stroke-dasharray: 2 3.2;
+    stroke-width: 1.15;
   }
-  .nodo[data-estado='flor'] .marca__punto { fill: var(--musgo); }
+  .nodo[data-estado='semilla'] .nodo-glifo__trazo {
+    stroke: var(--tinta-suave);
+  }
+  .nodo[data-estado='flor'] .nodo-glifo__punto { fill: var(--musgo); }
 
   /* --- cuerpos fructíferos: lo único cálido, y lo único sobre tierra --- */
   .fruto__tallo {
@@ -339,7 +356,26 @@ const yLinea = (lam: Lamina, rot: { y: number; ancla: string; lineas: string[] }
     fill: none;
     stroke: var(--tinta);
     stroke-width: 0.8;
-    opacity: 0.55;
+    opacity: 0.62;
+  }
+  .fruto__fibras path {
+    fill: none;
+    stroke: var(--tinta);
+    stroke-width: 0.6;
+    opacity: 0.3;
+  }
+  .fruto__anillo {
+    fill: var(--papel-alto);
+    stroke: var(--tinta);
+    stroke-width: 1.1;
+  }
+  /* El tramado va por encima del relleno ámbar: es el volumen del sombrero. */
+  .fruto__trama path {
+    fill: none;
+    stroke: var(--tinta);
+    stroke-width: 0.7;
+    opacity: 0.28;
+    stroke-linecap: round;
   }
 
   .plomada {
@@ -402,7 +438,7 @@ const yLinea = (lam: Lamina, rot: { y: number; ancla: string; lineas: string[] }
   .corte.rastreando .rootlets path { opacity: 0.16; }
   .corte.rastreando .nodo:not(.activo):not(.conexo) .rotulo,
   .corte.rastreando .nodo:not(.activo):not(.conexo) .tag { opacity: 0.2; }
-  .corte.rastreando .nodo:not(.activo):not(.conexo) .marca { opacity: 0.22; }
+  .corte.rastreando .nodo:not(.activo):not(.conexo) .nodo-glifo { opacity: 0.22; }
   .corte.rastreando .nodo:not(.activo):not(.conexo) .fruto { opacity: 0.28; }
 
   .hifa.viva .hifa__filamento {

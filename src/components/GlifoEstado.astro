@@ -44,10 +44,16 @@ const g = GLIFOS[estado];
     stroke-width: 1.1;
   }
 
-  /* La espora vive en lo hondo: su halo es tentativo. */
-  .glifo--semilla .glifo__trazo {
-    stroke-dasharray: 2 3.2;
+  /* La espora vive en lo hondo: se dibuja más liviana, no punteada
+     —ahora tiene contorno propio y el punteado la rompía—. */
+  .glifo--semilla .glifo__trazo,
+  .glifo--semilla .glifo__cuerpo {
     stroke: var(--tinta-suave);
+  }
+  /* La espora no se rellena: se dibuja como contorno, que es como se ve al
+     microscopio. El ámbar está reservado al cuerpo fructífero. */
+  .glifo--semilla .glifo__cuerpo {
+    fill: none;
   }
   /* El micelio ya está vivo: un toque de musgo, con cuentagotas. */
   .glifo--flor .glifo__punto {

@@ -64,8 +64,17 @@ function rng(semilla: number): () => number {
 /* --------------------------------------------------------------- */
 
 export interface AnatomiaFruto {
+  /** Silueta del tallo, con la base ensanchada. */
   tallo: string;
+  /** Fibrillas longitudinales del tallo. */
+  fibras: string[];
+  /** Anillo: el resto del velo parcial que cubría las laminillas. */
+  anillo: string;
+  /** Silueta del sombrero, con umbo y margen enrollado. */
   sombrero: string;
+  /** Tramado radial que le da volumen al sombrero. */
+  trama: string[];
+  /** Laminillas, radiando del tallo al margen. */
   laminillas: string[];
   cx: number;
   baseY: number;
@@ -171,7 +180,21 @@ function rootletsDe(
   return out;
 }
 
-/** Tallo + sombrero + laminillas de un cuerpo fructífero. */
+/**
+ * Anatomía de un cuerpo fructífero, dibujada como en una lámina de campo.
+ *
+ * No es un domo sobre un palo: un hongo con laminillas tiene partes que se
+ * reconocen y que son las que lo hacen leer como un dibujo de alguien que los
+ * miró. De abajo hacia arriba:
+ *   - base bulbosa, de donde sale el micelio;
+ *   - fibrillas longitudinales sobre el tallo;
+ *   - anillo, el resto del velo que cubría las laminillas antes de abrirse;
+ *   - laminillas radiando del tallo al margen;
+ *   - sombrero con umbo (el pico no está centrado) y margen enrollado;
+ *   - tramado radial, que es como una lámina modela el volumen.
+ * Todo determinístico: dos hongos nunca salen iguales, pero el mismo concepto
+ * dibuja siempre el suyo.
+ */
 function anatomiaDe(
   x: number,
   r: () => number,
@@ -180,34 +203,86 @@ function anatomiaDe(
 ): AnatomiaFruto {
   const sup = L.superficie;
   const altura = alturaForzada ?? L.talloMin + r() * (L.talloMax - L.talloMin);
-  const inclina = (r() - 0.5) * 30;
+  const inclina = (r() - 0.5) * 26;
   const radio = L.radioSombrero + r() * 11;
   const baseY = sup - altura;
   const cx = x + inclina;
-  const ancho = 5.2;
 
+  const anchoTallo = 4.4 + r() * 1.3;
+  const bulbo = anchoTallo * (1.8 + r() * 0.6);
+  const domo = radio * 0.74;
+  // El ápice corrido: un sombrero perfectamente simétrico se lee como ícono.
+  const umbo = (r() - 0.5) * radio * 0.2;
+  const yAnillo = baseY + altura * (0.26 + r() * 0.12);
+
+  /* Cónico en todo su largo, no un palo con pie. Si la conicidad se concentra
+     abajo, el bulbo queda enterrado bajo la línea de superficie y el tallo se
+     lee como una columna. Los puntos de control reparten el ensanche parejo. */
   const tallo =
-    `M ${f(x - ancho)} ${f(sup + 4)} ` +
-    `C ${f(x - ancho + 1)} ${f(sup - altura * 0.45)}, ${f(cx - 4.6)} ${f(baseY + 14)}, ${f(cx - 4.2)} ${f(baseY + 2)} ` +
-    `L ${f(cx + 4.2)} ${f(baseY + 2)} ` +
-    `C ${f(cx + 4.6)} ${f(baseY + 14)}, ${f(x + ancho - 1)} ${f(sup - altura * 0.45)}, ${f(x + ancho)} ${f(sup + 4)} Z`;
+    `M ${f(x - bulbo)} ${f(sup + 5)} ` +
+    `C ${f(x - bulbo * 0.78)} ${f(sup - altura * 0.42)}, ${f(cx - anchoTallo * 1.18)} ${f(baseY + altura * 0.34)}, ${f(cx - anchoTallo)} ${f(baseY + 3)} ` +
+    `L ${f(cx + anchoTallo)} ${f(baseY + 3)} ` +
+    `C ${f(cx + anchoTallo * 1.18)} ${f(baseY + altura * 0.34)}, ${f(x + bulbo * 0.78)} ${f(sup - altura * 0.42)}, ${f(x + bulbo)} ${f(sup + 5)} Z`;
 
-  const alturaSombrero = radio * 0.68;
-  const sombrero =
-    `M ${f(cx - radio)} ${f(baseY)} ` +
-    `C ${f(cx - radio * 0.98)} ${f(baseY - alturaSombrero * 1.55)}, ` +
-    `${f(cx + radio * 0.98)} ${f(baseY - alturaSombrero * 1.55)}, ` +
-    `${f(cx + radio)} ${f(baseY)} ` +
-    `Q ${f(cx)} ${f(baseY + 8)}, ${f(cx - radio)} ${f(baseY)} Z`;
-
-  const laminillas: string[] = [];
-  for (let i = -3; i <= 3; i++) {
-    const lx = cx + (i / 3.5) * radio * 0.82;
-    const prof = 4.6 - Math.abs(i) * 0.55;
-    laminillas.push(`M ${f(lx)} ${f(baseY + 1.5)} L ${f(lx)} ${f(baseY + 1.5 + prof)}`);
+  const fibras: string[] = [];
+  for (let i = -1; i <= 1; i++) {
+    const desvio = i * anchoTallo * 0.5;
+    fibras.push(
+      `M ${f(cx + desvio * 0.8)} ${f(baseY + 8)} ` +
+        `Q ${f(cx + desvio)} ${f(baseY + altura * 0.55)}, ${f(x + desvio * 1.5)} ${f(sup - 4)}`
+    );
   }
 
-  return { tallo, sombrero, laminillas, cx, baseY, radio };
+  /* El velo se rompió y quedó colgando. Cae hacia un lado, no simétrico:
+     un anillo perfectamente centrado se lee como una arandela. */
+  const anilloAncho = anchoTallo * 1.95;
+  const caida = (r() - 0.5) * anchoTallo * 0.5;
+  const anillo =
+    `M ${f(cx - anilloAncho + caida)} ${f(yAnillo)} ` +
+    `Q ${f(cx + caida * 0.5)} ${f(yAnillo + 7)}, ${f(cx + anilloAncho + caida)} ${f(yAnillo - 1)} ` +
+    `Q ${f(cx + caida * 0.5)} ${f(yAnillo - 2.5)}, ${f(cx - anilloAncho + caida)} ${f(yAnillo)} Z`;
+
+  const sombrero =
+    `M ${f(cx - radio)} ${f(baseY + 1)} ` +
+    `C ${f(cx - radio * 0.96)} ${f(baseY - domo * 0.74)}, ${f(cx - radio * 0.4)} ${f(baseY - domo * 1.04)}, ${f(cx + umbo)} ${f(baseY - domo * 1.1)} ` +
+    `C ${f(cx + radio * 0.42)} ${f(baseY - domo * 1.0)}, ${f(cx + radio * 0.96)} ${f(baseY - domo * 0.72)}, ${f(cx + radio)} ${f(baseY + 1)} ` +
+    `Q ${f(cx)} ${f(baseY + 9)}, ${f(cx - radio)} ${f(baseY + 1)} Z`;
+
+  /* Estriaciones del margen, no radios completos.
+     Si todos los trazos convergen en el ápice, el sombrero se lee como un
+     paraguas con varillas. En una lámina el volumen del domo se sugiere con
+     trazos CORTOS concentrados en la mitad exterior, que además es donde un
+     sombrero estriado los tiene de verdad. */
+  const trama: string[] = [];
+  const nTrama = 9;
+  for (let i = -nTrama; i <= nTrama; i++) {
+    const t = i / nTrama;
+    const at = Math.abs(t);
+    if (at < 0.22) continue; // el centro queda limpio
+    // Cuanto más cerca del margen, más largo el trazo.
+    const desde = 0.46;
+    const xa = cx + t * radio * 0.72;
+    const ya = baseY - domo * desde;
+    const xm = cx + t * radio * 0.92;
+    const ym = baseY - domo * 0.06 * (1 - at * at);
+    const xc = cx + t * radio * 0.85;
+    const yc = baseY - domo * 0.24;
+    trama.push(`M ${f(xa)} ${f(ya)} Q ${f(xc)} ${f(yc)}, ${f(xm)} ${f(ym)}`);
+  }
+
+  // Laminillas: del tallo al margen, siguiendo la curva del reverso.
+  const laminillas: string[] = [];
+  const nLam = 5;
+  for (let i = -nLam; i <= nLam; i++) {
+    const t = i / nLam;
+    const at = Math.abs(t);
+    const xi = cx + t * anchoTallo * 0.9;
+    const xf = cx + t * radio * 0.9;
+    const yf = baseY + 8 * (1 - at * at) * 0.85;
+    laminillas.push(`M ${f(xi)} ${f(baseY + 2.5)} L ${f(xf)} ${f(yf)}`);
+  }
+
+  return { tallo, fibras, anillo, sombrero, trama, laminillas, cx, baseY, radio };
 }
 
 /**
