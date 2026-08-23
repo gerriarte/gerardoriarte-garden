@@ -116,7 +116,7 @@ export const GET: APIRoute = async ({ props }) => {
 
   <text x="72" y="${ALTO - 62}" font-family="${MONO}" font-size="21" fill="#6b5b45">${escapar(
     AUTOR.nombre
-  )} · gerardoriarte.com</text>
+  )} · www.gerardoriarte.com</text>
 </svg>`;
 
   const png = await sharp(Buffer.from(svg)).png({ compressionLevel: 9 }).toBuffer();

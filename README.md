@@ -205,7 +205,7 @@ tres cosas **de una sola vez**:
 1. `sameAs` en el JSON-LD de todas las páginas.
 2. Un enlace visible en el pie con `rel="me"`.
 3. La verificación cruzada: el motor sigue el enlace y espera encontrar una
-   referencia de vuelta a este dominio (conviene poner gerardoriarte.com en la
+   referencia de vuelta a este dominio (conviene poner www.gerardoriarte.com en la
    bio de cada perfil).
 
 ```ts
@@ -233,5 +233,5 @@ para evitar.
 Vercel autodetecta Astro. Salida estática, no necesita adapter. Conectá el repo
 o corré `vercel`.
 
-`site` en `astro.config.mjs` está en `https://gerardoriarte.com` — cambialo si
+`site` en `astro.config.mjs` está en `https://www.gerardoriarte.com` — cambialo si
 el dominio final es otro, porque de ahí salen las URLs canónicas.

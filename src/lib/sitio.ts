@@ -5,7 +5,7 @@
  */
 
 export const SITIO = {
-  url: 'https://gerardoriarte.com',
+  url: 'https://www.gerardoriarte.com',
   nombre: 'Gerardo Riarte',
   /** Cómo se llama el sitio cuando lo nombra un tercero. */
   nombreLargo: 'Gerardo Riarte — jardín de conceptos sobre criterio de marketing e IA',

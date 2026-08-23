@@ -18,7 +18,7 @@ const permalinks = fs
   .map((f) => f.replace(/\.md$/, ''));
 
 export default defineConfig({
-  site: 'https://gerardoriarte.com',
+  site: 'https://www.gerardoriarte.com',
   // Barra final consistente: evita que /especimenes y /especimenes/ se
   // indexen como dos documentos distintos.
   trailingSlash: 'ignore',

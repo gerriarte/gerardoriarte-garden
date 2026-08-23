@@ -1,4 +1,4 @@
-# El Jardin - gerardoriarte.com
+# El Jardin - www.gerardoriarte.com
 User-agent: *
 Allow: /
 
@@ -31,4 +31,4 @@ Allow: /
 User-agent: CCBot
 Allow: /
 
-Sitemap: https://gerardoriarte.com/sitemap-index.xml
+Sitemap: https://www.gerardoriarte.com/sitemap-index.xml
