@@ -33,6 +33,42 @@ const laminas = tenderMicelio(conceptos, aristas, dominios);
               <stop offset="0%" stop-color="#f2eada" stop-opacity="0.9" />
               <stop offset="100%" stop-color="#f0e7d3" stop-opacity="0.25" />
             </linearGradient>
+
+            {/* --- volumen del cuerpo fructífero ---
+                Los tres van en objectBoundingBox (el default), así que el
+                mismo degradado se adapta a la caja de cada hongo: la luz cae
+                del mismo lado para todos sin calcular nada por nodo.
+                La fuente está arriba a la izquierda, y es la misma para el
+                sombrero, el tallo y la sombra de apoyo. */}
+            {/* Los stops cierran antes del 100%: el radio de un radialGradient
+                en objectBoundingBox se mide contra la caja, no contra la
+                silueta, así que un stop al 100% cae en una esquina que el
+                sombrero no ocupa y el domo termina leyéndose plano. */}
+            <radialGradient id={`domo-${lam.modo}`} cx="34%" cy="12%" r="74%">
+              <stop offset="0%" stop-color="#efc271" />
+              <stop offset="38%" stop-color="#cd8d1c" />
+              <stop offset="72%" stop-color="#a56c11" />
+              <stop offset="100%" stop-color="#7a5010" />
+            </radialGradient>
+            {/* El margen enrollado es la parte que no recibe luz. Va como
+                capa aparte sobre el mismo path: así el degradado del domo no
+                tiene que resolver a la vez el volumen y la sombra. */}
+            <linearGradient id={`margen-${lam.modo}`} x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#2a2018" stop-opacity="0" />
+              <stop offset="56%" stop-color="#2a2018" stop-opacity="0" />
+              <stop offset="100%" stop-color="#2a2018" stop-opacity="0.34" />
+            </linearGradient>
+            <linearGradient id={`carne-${lam.modo}`} x1="0" y1="0" x2="1" y2="0">
+              <stop offset="0%" stop-color="#f7f1e4" />
+              <stop offset="44%" stop-color="#f0e7d3" />
+              <stop offset="100%" stop-color="#d7c8ab" />
+            </linearGradient>
+            {/* El hongo apoya en la tierra en vez de flotar sobre ella. */}
+            <radialGradient id={`poso-${lam.modo}`}>
+              <stop offset="0%" stop-color="#2a2018" stop-opacity="0.34" />
+              <stop offset="62%" stop-color="#2a2018" stop-opacity="0.11" />
+              <stop offset="100%" stop-color="#2a2018" stop-opacity="0" />
+            </radialGradient>
           </defs>
 
           {/* --- las dos zonas del corte --- */}
@@ -107,12 +143,22 @@ const laminas = tenderMicelio(conceptos, aristas, dominios);
                       laminillas y el tramado, que son superficie del sombrero. */}
                   {n.anatomia && (
                     <g class="fruto">
+                      {/* Primero la sombra de apoyo: va DEBAJO del tallo, si
+                          no le pisa el bulbo y se lee como un charco. */}
+                      <ellipse
+                        class="fruto__poso"
+                        cx={n.anatomia.pieX + n.anatomia.pieAncho * 0.5}
+                        cy={lam.lienzo.superficie + 4}
+                        rx={n.anatomia.pieAncho * 2.8}
+                        ry={n.anatomia.pieAncho * 0.7}
+                      />
                       <path class="fruto__tallo" d={n.anatomia.tallo} />
                       <g class="fruto__fibras">
                         {n.anatomia.fibras.map((d) => <path d={d} />)}
                       </g>
                       <path class="fruto__anillo" d={n.anatomia.anillo} />
                       <path class="fruto__sombrero" d={n.anatomia.sombrero} />
+                      <path class="fruto__margen" d={n.anatomia.sombrero} />
                       {/* Las laminillas van SOBRE el relleno: en vista lateral
                           se ven en la banda del reverso, no detrás del hongo. */}
                       <g class="fruto__laminillas">
@@ -339,22 +385,54 @@ const laminas = tenderMicelio(conceptos, aristas, dominios);
   }
   .nodo[data-estado='flor'] .nodo-glifo__punto { fill: var(--musgo); }
 
-  /* --- cuerpos fructíferos: lo único cálido, y lo único sobre tierra --- */
+  /* --- cuerpos fructíferos: lo único cálido, y lo único sobre tierra ---
+
+     Las dos láminas están las dos en el DOM, así que sus <defs> no pueden
+     compartir id. Cada hoja declara a cuál de los dos juegos apunta y el
+     resto de las reglas usa la variable: así el fill vive en CSS y no en un
+     atributo de presentación, que el CSS terminaría pisando igual. */
+  .hoja--ancho {
+    --domo: url(#domo-ancho);
+    --margen: url(#margen-ancho);
+    --carne: url(#carne-ancho);
+    --poso: url(#poso-ancho);
+  }
+  .hoja--alto {
+    --domo: url(#domo-alto);
+    --margen: url(#margen-alto);
+    --carne: url(#carne-alto);
+    --poso: url(#poso-alto);
+  }
+
+  .fruto__poso {
+    fill: var(--poso);
+    pointer-events: none;
+  }
   .fruto__tallo {
-    fill: var(--papel-alto);
+    /* Degradado horizontal, no relleno plano: un tallo de un solo tono se
+       lee como un rectángulo, no como algo cilíndrico. */
+    fill: var(--carne);
     stroke: var(--tinta);
     stroke-width: 1.3;
   }
   .fruto__sombrero {
-    fill: var(--ambar);
+    /* El domo es lo que más volumen pide: claro cerca del umbo, hondo
+       contra el margen. Es la diferencia entre un hongo y una pastilla. */
+    fill: var(--domo);
     stroke: var(--tinta);
     stroke-width: 1.5;
+  }
+  .fruto__margen {
+    fill: var(--margen);
+    stroke: none;
+    pointer-events: none;
   }
   .fruto__laminillas path {
     fill: none;
     stroke: var(--tinta);
     stroke-width: 0.8;
-    opacity: 0.62;
+    /* Sube de 0.62: ahora corren sobre la banda oscurecida del margen. */
+    opacity: 0.78;
   }
   .fruto__fibras path {
     fill: none;
@@ -363,7 +441,7 @@ const laminas = tenderMicelio(conceptos, aristas, dominios);
     opacity: 0.3;
   }
   .fruto__anillo {
-    fill: var(--papel-alto);
+    fill: var(--carne);
     stroke: var(--tinta);
     stroke-width: 1.1;
   }

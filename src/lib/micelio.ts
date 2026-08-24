@@ -79,6 +79,9 @@ export interface AnatomiaFruto {
   cx: number;
   baseY: number;
   radio: number;
+  /** Dónde y cuánto apoya en la tierra. Lo usa la sombra de contacto. */
+  pieX: number;
+  pieAncho: number;
 }
 
 export interface NodoMicelio extends Concepto {
@@ -291,7 +294,19 @@ function anatomiaDe(
     laminillas.push(`M ${f(xi)} ${f(baseY + 2.5)} L ${f(xf)} ${f(yf)}`);
   }
 
-  return { tallo, fibras, anillo, sombrero, trama, laminillas, cx, baseY, radio };
+  return {
+    tallo,
+    fibras,
+    anillo,
+    sombrero,
+    trama,
+    laminillas,
+    cx,
+    baseY,
+    radio,
+    pieX: f(x),
+    pieAncho: f(bulbo),
+  };
 }
 
 /** Hifas entre nodos ya posicionados. Comparte fórmula entre las dos láminas. */
