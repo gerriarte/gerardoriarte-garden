@@ -1,6 +1,8 @@
 ---
+import { Image } from 'astro:assets';
 import Base from '../layouts/Base.astro';
 import { paginaQuienCultiva } from '../lib/estructurados';
+import retrato from '../assets/gerardo-riarte.png';
 
 const jsonLd = paginaQuienCultiva();
 ---
@@ -10,77 +12,131 @@ const jsonLd = paginaQuienCultiva();
   descripcion="Gerardo Riarte, estratega de marketing. Por qué existe este jardín de conceptos y cómo leerlo: los conceptos son hongos, el valor es el micelio que los conecta."
   jsonLd={jsonLd}
 >
-  <header class="contenedor cabecera">
-    <p class="etiqueta-campo">lámina iii · el jardinero</p>
-    <h1 class="cabecera__titulo">Quién cultiva esto</h1>
-  </header>
+  <div class="contenedor quien">
+    <div class="quien__texto">
+      <header class="cabecera">
+        <p class="etiqueta-campo">lámina iii · el jardinero</p>
+        <h1 class="cabecera__titulo">Quién cultiva esto</h1>
+      </header>
 
-  <div class="contenedor">
-    <div class="prosa">
-      <p class="entrada">
-        Soy Gerardo Riarte — Ger. Estratega de marketing, argentino en Bogotá.
-        Trabajo donde el marketing se cruza con la IA aplicada: marca, medición
-        e ingeniería operando como un mismo sistema. Fundé a:bra (Latam), donde
-        construimos productos en vez de solo presentarlos.
-      </p>
+      <div class="prosa">
+        <p class="entrada">
+          Soy Gerardo Riarte — Ger. Estratega de marketing, argentino en Bogotá.
+          Trabajo donde el marketing se cruza con la IA aplicada: marca,
+          medición e ingeniería operando como un mismo sistema. Fundé a:bra
+          (Latam), donde construimos productos en vez de solo presentarlos.
+        </p>
 
-      <p>
-        Este sitio no es mi portfolio. Para eso está a:bra. Acá cultivo criterio
-        en público.
-      </p>
+        <p>
+          Este sitio no es mi portfolio. Para eso está a:bra. Acá cultivo
+          criterio en público.
+        </p>
 
-      <h2>Por qué existe este jardín</h2>
+        <h2>Por qué existe este jardín</h2>
 
-      <p>
-        La IA volvió gratis la ejecución. Investigar, resumir, redactar,
-        comparar —lo que durante generaciones distinguió a un profesional— hoy
-        lo hace una máquina en segundos. Lo único que todavía se cobra es saber
-        qué construir: decidir bien bajo incertidumbre, qué priorizar, qué
-        ignorar, qué descartar.
-      </p>
+        <p>
+          La IA volvió gratis la ejecución. Investigar, resumir, redactar,
+          comparar —lo que durante generaciones distinguió a un profesional—
+          hoy lo hace una máquina en segundos. Lo único que todavía se cobra es
+          saber qué construir: decidir bien bajo incertidumbre, qué priorizar,
+          qué ignorar, qué descartar.
+        </p>
 
-      <p>
-        Ese criterio no se transfiere en un curso ni se resume en un prompt. Se
-        forma decidiendo, y se pierde cuando dejás de hacerlo. Este jardín es
-        donde formo el mío a la vista: cada concepto empieza como una idea
-        suelta y solo madura si cruza la barra de evidencia —no cuando me
-        encariño con él.
-      </p>
+        <p>
+          Ese criterio no se transfiere en un curso ni se resume en un prompt.
+          Se forma decidiendo, y se pierde cuando dejás de hacerlo. Este jardín
+          es donde formo el mío a la vista: cada concepto empieza como una idea
+          suelta y solo madura si cruza la barra de evidencia —no cuando me
+          encariño con él.
+        </p>
 
-      <h2>Cómo leerlo</h2>
+        <h2>Cómo leerlo</h2>
 
-      <p>
-        Cada concepto es un hongo: la parte visible. El valor real es el micelio
-        —la red de criterio que los conecta bajo tierra—. Un concepto sube de
-        etapa (espora → cuerpo fructífero) por evidencia de que produjo algo
-        real, no por antigüedad.
-      </p>
+        <p>
+          Cada concepto es un hongo: la parte visible. El valor real es el
+          micelio —la red de criterio que los conecta bajo tierra—. Un concepto
+          sube de etapa (espora → cuerpo fructífero) por evidencia de que
+          produjo algo real, no por antigüedad.
+        </p>
 
-      <p>
-        No vas a encontrar reacciones al último release ni tutoriales de
-        herramientas —eso envejece en meses—. Vas a encontrar métodos que
-        aplico, defiendo y a veces descarto.
-      </p>
+        <p>
+          No vas a encontrar reacciones al último release ni tutoriales de
+          herramientas —eso envejece en meses—. Vas a encontrar métodos que
+          aplico, defiendo y a veces descarto.
+        </p>
 
-      <p class="salida">
-        <a href="/" class="salida__link campo">Entrar por el micelio →</a>
-        <a href="/especimenes" class="salida__link campo">Ver el índice →</a>
-      </p>
+        <p class="salida">
+          <a href="/" class="salida__link campo">Entrar por el micelio →</a>
+          <a href="/especimenes" class="salida__link campo">Ver el índice →</a>
+        </p>
+      </div>
     </div>
+
+    {/* El espécimen de la lámina. Recortado y sin marco, como los hongos del
+        mapa: en una guía de campo el ejemplar se apoya sobre el papel, no se
+        enmarca. La plomada y la etiqueta tipeada abajo son el resto del
+        pliego. */}
+    <aside class="retrato">
+      <Image
+        src={retrato}
+        alt="Gerardo Riarte, de brazos cruzados, con un suéter verde."
+        widths={[220, 320, retrato.width]}
+        sizes="(max-width: 900px) 190px, 320px"
+        class="retrato__foto"
+        loading="eager"
+      />
+      <p class="retrato__plomada" aria-hidden="true"></p>
+      <p class="etiqueta-campo retrato__pie">Ger · Bogotá</p>
+    </aside>
   </div>
 </Base>
 
 <style>
-  .cabecera {
-    padding-block: 3.5rem 1.4rem;
+  .quien {
+    display: grid;
+    /* minmax(0,…) por lo mismo que en la nota: sin el 0 el texto largo
+       estira la columna en vez de reflowear. */
+    grid-template-columns: minmax(0, 1fr) 320px;
+    gap: 3.5rem;
+    align-items: start;
+    padding-block: 3.5rem 1rem;
   }
+
   .cabecera__titulo {
     font-size: clamp(2.2rem, 5vw, 3.4rem);
     margin: 0.7rem 0 0;
   }
+  .quien__texto .prosa {
+    margin-top: 1.6rem;
+  }
 
-  /* Las dos salidas al jardín. Sin esto la lámina termina en un punto y
-     medio: el texto explica cómo leerlo y no ofrece por dónde empezar. */
+  .retrato {
+    position: sticky;
+    top: 2rem;
+    text-align: center;
+  }
+  .retrato__foto {
+    width: 100%;
+    height: auto;
+    display: block;
+    /* El recorte termina en un corte recto a la altura del muslo. Sin esto
+       la foto se lee como una imagen mal cropeada; con el degradado se
+       disuelve en el papel, que es como una lámina resuelve un ejemplar
+       que no entra entero. */
+    -webkit-mask-image: linear-gradient(to bottom, #000 80%, transparent 100%);
+    mask-image: linear-gradient(to bottom, #000 80%, transparent 100%);
+  }
+  .retrato__plomada {
+    width: 1px;
+    height: 1.5rem;
+    margin: 0.9rem auto 0;
+    background: var(--filete);
+  }
+  .retrato__pie {
+    margin: 0.55rem 0 0;
+    font-size: 0.68rem;
+  }
+
   /* `.prosa .salida` y no `.salida`: `.prosa p` ya fija el margen de todo
      párrafo y le gana por especificidad a una clase sola. */
   .prosa .salida {
@@ -98,5 +154,19 @@ const jsonLd = paginaQuienCultiva();
   }
   .salida__link:hover {
     border-bottom-color: var(--ambar-hondo);
+  }
+
+  @media (max-width: 900px) {
+    .quien {
+      grid-template-columns: minmax(0, 1fr);
+      gap: 2rem;
+      padding-top: 2.5rem;
+    }
+    /* Arriba del texto: en una columna, el ejemplar abre la lámina. */
+    .retrato {
+      position: static;
+      order: -1;
+      width: 190px;
+    }
   }
 </style>
