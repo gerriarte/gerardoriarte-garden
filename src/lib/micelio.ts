@@ -86,18 +86,22 @@ export interface NodoMicelio extends Concepto {
   y: number;
   rootlets: string[];
   anatomia?: AnatomiaFruto;
-  /** Rótulo ya resuelto: posición, anclaje y hasta dos renglones. */
-  rotulo: {
-    x: number;
-    y: number;
-    ancla: 'start' | 'middle' | 'end';
-    lineas: string[];
-    /** Solo en vertical: el dominio impreso, porque ya no es posición. */
-    tag?: string;
-  };
-  /** Plomada del nodo a su rótulo. */
+  /**
+   * Caja de la ficha, en unidades de lienzo. El contenido (etapa, título,
+   * resumen) lo arma el componente dentro de un foreignObject: SVG no hace
+   * wrap de texto y una descripción corta no se puede partir a mano sin
+   * horneárselo al build por cada ancho de lámina.
+   */
+  ficha: { x: number; y: number; ancho: number; alto: number };
+  /** Plomada del nodo a su ficha. */
   plomada: string;
 }
+
+/** Cuánto mide la ficha en cada lámina. La caja es fija; el texto se recorta. */
+const FICHAS: Record<Modo, { ancho: number; alto: number }> = {
+  ancho: { ancho: 252, alto: 106 },
+  alto: { ancho: 300, alto: 112 },
+};
 
 export interface Hifa {
   /** Orientada: siempre del extremo menos maduro al más maduro. */
@@ -135,11 +139,16 @@ export interface Lamina {
   pie: { texto: string; x: number; y: number }[];
 }
 
+/* La franja de aire creció con las fichas: el rótulo de un cuerpo fructífero
+   pasó de una línea de texto a una caja de ~106u sobre el sombrero. Con la
+   superficie donde estaba, esa caja se salía del lienzo por arriba. El
+   espesor del subsuelo no cambia —alto y superficie se mueven juntos—, así
+   que la proporción del corte se mantiene. */
 const LIENZOS: Record<Modo, Lienzo> = {
   ancho: {
     ancho: 1600,
-    alto: 830,
-    superficie: 250,
+    alto: 880,
+    superficie: 300,
     escalaTrazo: 1,
     talloMin: 82,
     talloMax: 118,
@@ -148,10 +157,10 @@ const LIENZOS: Record<Modo, Lienzo> = {
   alto: {
     ancho: 440,
     alto: 0, // se calcula: crece con la cantidad de notas
-    superficie: 210,
+    superficie: 310,
     escalaTrazo: 0.5,
-    talloMin: 92,
-    talloMax: 132,
+    talloMin: 96,
+    talloMax: 112,
     radioSombrero: 30,
   },
 };
@@ -285,22 +294,6 @@ function anatomiaDe(
   return { tallo, fibras, anillo, sombrero, trama, laminillas, cx, baseY, radio };
 }
 
-/**
- * Parte un título largo en dos renglones por el espacio más cercano al medio.
- * SVG no hace wrap solo, y en vertical el ancho es escaso.
- */
-function partirRotulo(titulo: string, maxChars: number): string[] {
-  if (titulo.length <= maxChars) return [titulo];
-  const medio = titulo.length / 2;
-  let corte = -1;
-  for (let i = 0; i < titulo.length; i++) {
-    if (titulo[i] !== ' ') continue;
-    if (corte === -1 || Math.abs(i - medio) < Math.abs(corte - medio)) corte = i;
-  }
-  if (corte === -1) return [titulo];
-  return [titulo.slice(0, corte), titulo.slice(corte + 1)];
-}
-
 /** Hifas entre nodos ya posicionados. Comparte fórmula entre las dos láminas. */
 function tejerHifas(
   aristas: Arista[],
@@ -421,6 +414,25 @@ function tenderPanoramico(
   }
 
   const centro = L.ancho / 2;
+  const F = FICHAS.ancho;
+  /* La columna de la izquierda la ocupa la escala de profundidad. Una ficha
+     empujada hasta el borde la taparía entera, así que ese margen es zona
+     vedada y el lado se elige, no se recorta. */
+  const BORDE_IZQ = 132;
+  const BORDE_DER = L.ancho - 12;
+  const clampX = (v: number) => f(Math.min(Math.max(v, 12), BORDE_DER - F.ancho));
+
+  /**
+   * De qué lado del nodo va la ficha. La preferencia es hacia afuera —lejos
+   * del centro poblado—, pero si de ese lado no entra, se va al otro: una
+   * caja recortada contra el borde es peor que una caja del lado "equivocado".
+   */
+  const ladoFicha = (x: number, prefiereIzq: boolean) => {
+    const aIzq = x - 26 - F.ancho;
+    const aDer = x + 26;
+    if (prefiereIzq) return aIzq < BORDE_IZQ ? aDer : aIzq;
+    return aDer + F.ancho > BORDE_DER ? aIzq : aDer;
+  };
 
   // --- Pasada 1: la x la da el dominio ---
   const ubicados = conceptos.map((c) => {
@@ -435,11 +447,14 @@ function tenderPanoramico(
   });
 
   /* --- Pasada 2: la y la da la madurez, pero escalonada dentro del estrato ---
-     Los nodos de una misma etapa comparten profundidad, así que sus rótulos
-     laterales caen en la misma línea y el de uno termina encima del glifo del
-     vecino. El escalonado alterna arriba/abajo por posición horizontal: deja
-     52u entre vecinos, suficiente para que dos rótulos nunca compartan renglón.
-     Se hace acá y no con jitter al azar porque tiene que estar garantizado. */
+     Los nodos de una misma etapa comparten profundidad, así que sus fichas
+     caen en la misma línea y la de uno termina encima del glifo del vecino.
+     El escalonado alterna arriba/abajo por posición horizontal.
+
+     El salto es de 128u —no de 52 como cuando esto era una línea de texto—
+     porque lo que no se puede pisar ahora es una caja de 106u de alto. El
+     jitter baja a ±5 por lo mismo: con ±8 la holgura entre dos fichas
+     vecinas se comía la mitad del margen. */
   const alturas = new Map<string, number>();
   const porEstado = new Map<Estado, typeof ubicados>();
   for (const u of ubicados) {
@@ -456,7 +471,7 @@ function tenderPanoramico(
           u.c.slug,
           estado === 'fruto'
             ? L.superficie + 6
-            : base + (i % 2 === 0 ? -26 : 26) + (u.r() - 0.5) * 16
+            : base + (i % 2 === 0 ? -64 : 64) + (u.r() - 0.5) * 10
         );
       });
   }
@@ -472,25 +487,26 @@ function tenderPanoramico(
 
     // Los frutos rotulan arriba del sombrero; el resto, al costado y hacia
     // afuera, lejos del centro poblado.
-    const rotulo = anatomia
+    const ficha = anatomia
       ? {
-          x: anatomia.cx,
-          y: anatomia.baseY - anatomia.radio * 0.68 - 22,
-          ancla: 'middle' as const,
-          lineas: [c.titulo],
+          x: clampX(anatomia.cx - F.ancho / 2),
+          y: f(anatomia.baseY - anatomia.radio * 0.68 - 20 - F.alto),
+          ...F,
         }
       : {
-          x: x + (izq ? -22 : 22),
-          y: y + 5,
-          ancla: (izq ? 'end' : 'start') as 'end' | 'start',
-          lineas: [c.titulo],
+          x: clampX(ladoFicha(x, izq)),
+          y: f(y - F.alto / 2),
+          ...F,
         };
 
+    // La plomada une el espécimen con su ficha, como el hilo de un pliego.
+    // Cuál de los dos bordes de la caja toca depende de dónde terminó.
+    const quedoIzq = ficha.x + F.ancho <= x;
     const plomada = anatomia
-      ? `M ${f(anatomia.cx)} ${f(anatomia.baseY - anatomia.radio * 0.68 - 6)} L ${f(anatomia.cx)} ${f(rotulo.y + 6)}`
-      : `M ${f(x + (izq ? -15 : 15))} ${f(y)} L ${f(x + (izq ? -19 : 19))} ${f(y)}`;
+      ? `M ${f(anatomia.cx)} ${f(anatomia.baseY - anatomia.radio * 0.68 - 6)} L ${f(anatomia.cx)} ${f(ficha.y + F.alto)}`
+      : `M ${f(x + (quedoIzq ? -15 : 15))} ${f(y)} L ${f(quedoIzq ? ficha.x + F.ancho : ficha.x)} ${f(y)}`;
 
-    return { ...c, x: f(x), y: f(y), rootlets, anatomia, rotulo, plomada };
+    return { ...c, x: f(x), y: f(y), rootlets, anatomia, ficha, plomada };
   });
 
   const porSlug = new Map(nodos.map((n) => [n.slug, n]));
@@ -532,11 +548,11 @@ function tenderPanoramico(
 function tenderVertical(conceptos: Concepto[], aristas: Arista[]): Lamina {
   const L = { ...LIENZOS.alto };
   const COL_GLIFO = 76;
-  const COL_ROTULO = 108;
-  const ALTO_FILA = 132;
+  const COL_FICHA = 116;
+  // La fila la marca la ficha, no el glifo: 112 de caja + 34 de aire.
+  const ALTO_FILA = 146;
   const MARGEN_FONDO = 74;
-  // 440 - 108 de sangría - 12 de margen, a ~9.9u por carácter
-  const MAX_CHARS = 30;
+  const F = FICHAS.alto;
 
   const frutos = conceptos.filter((c) => c.estado === 'fruto');
   const hondos = conceptos.filter((c) => c.estado !== 'fruto');
@@ -563,13 +579,12 @@ function tenderVertical(conceptos: Concepto[], aristas: Arista[]): Lamina {
       y: f(y),
       rootlets: rootletsDe(x, y, r, 3 + Math.floor(r() * 2), L),
       anatomia,
-      rotulo: {
-        x: anatomia.cx,
-        y: anatomia.baseY - anatomia.radio * 0.68 - 16,
-        ancla: 'middle',
-        lineas: partirRotulo(c.titulo, 22),
+      ficha: {
+        x: f(Math.min(Math.max(anatomia.cx - F.ancho / 2, 12), L.ancho - F.ancho - 12)),
+        y: f(anatomia.baseY - anatomia.radio * 0.68 - 14 - F.alto),
+        ...F,
       },
-      plomada: `M ${f(anatomia.cx)} ${f(anatomia.baseY - anatomia.radio * 0.68 - 4)} L ${f(anatomia.cx)} ${f(anatomia.baseY - anatomia.radio * 0.68 - 12)}`,
+      plomada: `M ${f(anatomia.cx)} ${f(anatomia.baseY - anatomia.radio * 0.68 - 4)} L ${f(anatomia.cx)} ${f(anatomia.baseY - anatomia.radio * 0.68 - 14)}`,
     });
   });
 
@@ -588,7 +603,7 @@ function tenderVertical(conceptos: Concepto[], aristas: Arista[]): Lamina {
      La profundidad acá es ORDINAL, no proporcional: en un teléfono un
      estrato rotulado se lee mejor que una distancia exacta, y así escala
      a cualquier cantidad de notas sin que se encimen. */
-  let cursor = L.superficie + 96;
+  let cursor = L.superficie + 116;
   for (const estado of ORDEN_DESCENDENTE) {
     if (estado === 'fruto') continue;
     const enEstrato = hondos.filter((c) => c.estado === estado);
@@ -612,14 +627,8 @@ function tenderVertical(conceptos: Concepto[], aristas: Arista[]): Lamina {
         x: f(x),
         y: f(y),
         rootlets: rootletsDe(x, y, r, 3 + Math.floor(r() * 3), L),
-        rotulo: {
-          x: COL_ROTULO,
-          y: y - 4,
-          ancla: 'start',
-          lineas: partirRotulo(c.titulo, MAX_CHARS),
-          tag: c.dominio,
-        },
-        plomada: `M ${f(x + 16)} ${f(y)} L ${f(COL_ROTULO - 8)} ${f(y)}`,
+        ficha: { x: COL_FICHA, y: f(y - F.alto / 2), ...F },
+        plomada: `M ${f(x + 16)} ${f(y)} L ${f(COL_FICHA)} ${f(y)}`,
       });
 
       cursor += ALTO_FILA;
