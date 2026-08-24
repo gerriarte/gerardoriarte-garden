@@ -144,7 +144,8 @@ a:hover {
 .prosa > ul,
 .prosa > ol,
 .prosa > h2,
-.prosa > h3 {
+.prosa > h3,
+.prosa > blockquote {
   max-width: var(--medida);
 }
 .prosa p { margin: 1.15em 0; }
@@ -165,6 +166,20 @@ a:hover {
 .prosa li::marker { color: var(--tinta-suave); }
 .prosa strong { font-weight: 600; }
 .prosa em { font-style: italic; color: var(--tinta-suave); }
+
+/* La cita es la regla que ordena una sección: se lee como sentencia, no como
+   decoración. Sin comillas ni bastardilla —el filete alcanza para sacarla del
+   caudal del párrafo. */
+.prosa blockquote {
+  margin: 1.8em 0;
+  padding-left: 1.1rem;
+  border-left: 2px solid var(--tinta);
+  font-size: 1.14rem;
+  line-height: 1.55;
+}
+.prosa blockquote p { margin: 0.5em 0; }
+.prosa blockquote p:first-child { margin-top: 0; }
+.prosa blockquote p:last-child { margin-bottom: 0; }
 
 /* La entrada del ensayo: el párrafo que sostiene todo lo que viene. */
 .prosa .entrada {

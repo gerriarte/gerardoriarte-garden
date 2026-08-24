@@ -21,7 +21,12 @@ const fmt = (d?: Date) =>
       <GlifoEstado estado={c.estado} tamano={46} />
     </div>
 
-    <h3 class="pliego__nombre">{c.titulo}</h3>
+    {/* El nombre lleva la señal de link encima: subrayado permanente y flecha.
+        Sin eso el pliego se lee como una etiqueta impresa, no como una puerta. */}
+    <h3 class="pliego__nombre">
+      <span class="pliego__nombre-texto">{c.titulo}</span>
+      <span class="pliego__flecha" aria-hidden="true">↗</span>
+    </h3>
     {c.resumen && <p class="pliego__resumen">{c.resumen}</p>}
 
     <dl class="pliego__etiqueta campo">
@@ -78,9 +83,32 @@ const fmt = (d?: Date) =>
     font-size: 1.32rem;
     font-weight: 600;
     line-height: 1.18;
+    display: flex;
+    align-items: flex-start;
+    gap: 0.5rem;
   }
-  .pliego__link:hover .pliego__nombre {
+  .pliego__nombre-texto {
+    border-bottom: 1px solid var(--filete);
+    padding-bottom: 3px;
+    transition: border-color 0.25s ease, color 0.25s ease;
+  }
+  .pliego__flecha {
+    margin-left: auto;
+    font-family: var(--fuente-campo);
+    font-size: 0.9rem;
+    line-height: 1.5;
+    color: var(--tinta-suave);
+    transition: color 0.25s ease, transform 0.25s ease;
+  }
+  .pliego__link:hover .pliego__nombre-texto,
+  .pliego__link:focus-visible .pliego__nombre-texto {
     color: var(--ambar-hondo);
+    border-bottom-color: var(--ambar-hondo);
+  }
+  .pliego__link:hover .pliego__flecha,
+  .pliego__link:focus-visible .pliego__flecha {
+    color: var(--ambar-hondo);
+    transform: translate(1px, -1px);
   }
 
   .pliego__resumen {

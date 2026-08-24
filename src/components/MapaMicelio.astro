@@ -214,6 +214,8 @@ const yLinea = (lam: Lamina, rot: { y: number; ancla: string; lineas: string[] }
     <span class="solo-alto">se baja por los estratos: cuanto más hondo, menos maduro</span>
     <span>·</span>
     <span>las hifas son las conexiones entre conceptos</span>
+    <span>·</span>
+    <span class="leyenda__accion">cada rótulo subrayado abre su nota ↗</span>
   </figcaption>
 </figure>
 
@@ -385,11 +387,18 @@ const yLinea = (lam: Lamina, rot: { y: number; ancla: string; lineas: string[] }
     opacity: 0.45;
   }
 
+  /* El rótulo ES el link, así que lo dice: filete permanente debajo, del
+     mismo peso que las hifas del dibujo para no ensuciar la lámina. Sin él
+     el mapa se lee como ilustración y nadie prueba hacer clic. */
   .rotulo {
     font-family: var(--fuente-especimen);
     font-size: 19px;
     font-weight: 600;
     fill: var(--tinta);
+    text-decoration: underline;
+    text-decoration-color: var(--filete);
+    text-decoration-thickness: 1px;
+    text-underline-offset: 4px;
     transition: opacity 0.35s ease;
   }
   .nodo[data-estado='fruto'] .rotulo { font-size: 21px; }
@@ -455,13 +464,16 @@ const yLinea = (lam: Lamina, rot: { y: number; ancla: string; lineas: string[] }
     opacity: 1;
   }
 
-  .nodo.activo .rotulo { fill: var(--ambar-hondo); }
+  .nodo.activo .rotulo {
+    fill: var(--ambar-hondo);
+    text-decoration-color: var(--ambar-hondo);
+  }
 
   /* nota abierta: queda marcada de forma permanente */
   .nodo.es-activo .rotulo {
     fill: var(--ambar-hondo);
-    text-decoration: underline;
-    text-underline-offset: 5px;
+    text-decoration-color: var(--ambar-hondo);
+    text-decoration-thickness: 2px;
   }
 
   .leyenda {
@@ -474,6 +486,7 @@ const yLinea = (lam: Lamina, rot: { y: number; ancla: string; lineas: string[] }
     font-size: 0.78rem;
     text-align: center;
   }
+  .leyenda__accion { color: var(--ambar-hondo); }
 
   /* ---------------------------------------------------------------
      Movimiento ambiental: el micelio respira. Muy poco, muy lento.

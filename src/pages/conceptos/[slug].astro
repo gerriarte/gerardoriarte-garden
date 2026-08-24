@@ -17,10 +17,23 @@ const { Content } = await render(entrada);
 const d = entrada.data;
 const est = ESTADOS[d.estado];
 
-const backlinks = await backlinksDe(entrada.id);
+const backlinksCrudos = await backlinksDe(entrada.id);
 const { conceptos } = await construirRed();
-const titulos = new Map(conceptos.map((c) => [c.slug, c.titulo]));
-const salientes = d.conecta.filter((s) => titulos.has(s));
+const porSlug = new Map(conceptos.map((c) => [c.slug, c]));
+
+// Las hifas se muestran como fichas, no como una lista de títulos: para eso
+// necesitan el concepto entero (etapa, dominio, resumen), no solo el slug.
+const salientes = d.conecta.map((s) => porSlug.get(s)).filter((c) => c !== undefined);
+const entrantesTodas = backlinksCrudos
+  .map((b) => porSlug.get(b.slug))
+  .filter((c) => c !== undefined);
+
+// Una hifa mutua no son dos hifas: se declara de los dos lados. Como ficha la
+// duplicación se ve —dos pliegos idénticos, uno debajo del otro—, así que la
+// conexión se muestra una sola vez, del lado que sale, marcada como mutua.
+const salen = new Set(salientes.map((c) => c.slug));
+const backlinks = entrantesTodas.filter((c) => !salen.has(c.slug));
+const mutuas = new Set(entrantesTodas.filter((c) => salen.has(c.slug)).map((c) => c.slug));
 
 const fmt = (x?: Date) =>
   x ? x.toLocaleDateString('es', { year: 'numeric', month: 'short' }) : null;
@@ -33,10 +46,8 @@ const palabras = (entrada.body ?? '')
   .filter(Boolean).length;
 const jsonLd = paginaConcepto({
   concepto: esteConcepto,
-  conexiones: [
-    ...salientes.map((sl) => ({ slug: sl, titulo: titulos.get(sl)! })),
-    ...backlinks,
-  ],
+  // Deduplicadas: una hifa mutua es un `mentions` con el mismo @id dos veces.
+  conexiones: [...salientes, ...backlinks].map((c) => ({ slug: c.slug, titulo: c.titulo })),
   palabras,
 });
 ---
@@ -78,30 +89,46 @@ const jsonLd = paginaConcepto({
       </div>
 
       <div class="micelio-local">
-        {salientes.length > 0 && (
-          <div class="micelio-local__bloque">
-            <p class="etiqueta-campo">hifas que salen</p>
-            <ul>
-              {salientes.map((s) => (
-                <li>
-                  <a href={`/conceptos/${s}`}>→ {titulos.get(s)}</a>
-                </li>
-              ))}
-            </ul>
-          </div>
-        )}
-        {backlinks.length > 0 && (
-          <div class="micelio-local__bloque">
-            <p class="etiqueta-campo">hifas que entran</p>
-            <ul>
-              {backlinks.map((b) => (
-                <li>
-                  <a href={`/conceptos/${b.slug}`}>← {b.titulo}</a>
-                </li>
-              ))}
-            </ul>
-          </div>
-        )}
+        {[
+          { titulo: 'hifas que salen', glosa: 'lo que esta nota nombra', items: salientes },
+          { titulo: 'hifas que entran', glosa: 'lo que nombra a esta nota', items: backlinks },
+        ]
+          .filter((b) => b.items.length > 0)
+          .map((bloque) => (
+            <div class="micelio-local__bloque">
+              <p class="etiqueta-campo">
+                {bloque.titulo} <span class="micelio-local__glosa">· {bloque.glosa}</span>
+              </p>
+              <ul class="hifas-fichas">
+                {bloque.items.map((c) => (
+                  <li>
+                    {/* Ficha mínima, no un renglón de lista: el borde y el
+                        resumen son lo que hace legible que se puede entrar. */}
+                    <a href={`/conceptos/${c.slug}`} class="hifa-ficha">
+                      <span class="hifa-ficha__glifo">
+                        <GlifoEstado estado={c.estado} tamano={26} />
+                      </span>
+                      <span class="hifa-ficha__texto">
+                        <span class="hifa-ficha__meta campo">
+                          {ESTADOS[c.estado].label} · {c.dominio}
+                          {mutuas.has(c.slug) && (
+                            <span class="hifa-ficha__mutua" title="se nombran mutuamente">
+                              {' '}· ↔ mutua
+                            </span>
+                          )}
+                        </span>
+                        <span class="hifa-ficha__titulo">{c.titulo}</span>
+                        {c.resumen && (
+                          <span class="hifa-ficha__resumen">{c.resumen}</span>
+                        )}
+                      </span>
+                      <span class="hifa-ficha__flecha" aria-hidden="true">↗</span>
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ))}
       </div>
     </div>
 
@@ -194,21 +221,101 @@ const jsonLd = paginaConcepto({
     margin-top: 3.2rem;
     padding-top: 1.4rem;
     border-top: 1px solid var(--filete);
-    display: flex;
-    flex-wrap: wrap;
-    gap: 2.5rem;
+    display: grid;
+    gap: 2.2rem;
   }
-  .micelio-local__bloque ul {
+  .micelio-local__glosa {
+    font-weight: 400;
+    letter-spacing: 0.08em;
+    text-transform: none;
+    opacity: 0.8;
+  }
+
+  .hifas-fichas {
     list-style: none;
     padding: 0;
-    margin: 0.7rem 0 0;
+    margin: 0.9rem 0 0;
+    display: grid;
+    gap: 0.8rem;
+    /* minmax(0,…) por el mismo motivo que la grilla de la nota: sin el 0 el
+       resumen largo estira la columna en vez de recortarse. */
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 270px), 1fr));
   }
-  .micelio-local__bloque li { margin: 0.35rem 0; }
-  .micelio-local__bloque a {
-    font-family: var(--fuente-campo);
-    font-size: 0.86rem;
+
+  /* Ficha de hifa: el pliego de herbario en versión mínima. Mismo doble
+     filete que en el índice, para que se lea como el mismo objeto. */
+  .hifa-ficha {
+    display: flex;
+    gap: 0.75rem;
+    height: 100%;
+    padding: 0.85rem 0.9rem;
+    background: var(--papel-alto);
+    border: 1px solid var(--filete);
+    box-shadow: inset 0 0 0 1px var(--papel-alto), inset 0 0 0 2px var(--filete-tenue);
+    transition: border-color 0.25s ease;
   }
-  .micelio-local__bloque a:hover { color: var(--ambar-hondo); }
+  .hifa-ficha:hover {
+    border-color: var(--tinta);
+    color: var(--tinta);
+  }
+
+  .hifa-ficha__glifo {
+    flex-shrink: 0;
+    padding-top: 0.15rem;
+  }
+  .hifa-ficha__texto {
+    display: grid;
+    gap: 0.15rem;
+    min-width: 0;
+    flex: 1;
+  }
+  .hifa-ficha__meta {
+    font-size: 0.66rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--tinta-suave);
+  }
+  .hifa-ficha__mutua { color: var(--ambar-hondo); }
+  .hifa-ficha__titulo {
+    font-family: var(--fuente-especimen);
+    font-size: 1.02rem;
+    font-weight: 600;
+    line-height: 1.22;
+    /* El subrayado permanente es la señal de link; el hover solo lo enciende. */
+    border-bottom: 1px solid var(--filete);
+    padding-bottom: 2px;
+    justify-self: start;
+    transition: border-color 0.25s ease, color 0.25s ease;
+  }
+  .hifa-ficha:hover .hifa-ficha__titulo,
+  .hifa-ficha:focus-visible .hifa-ficha__titulo {
+    color: var(--ambar-hondo);
+    border-bottom-color: var(--ambar-hondo);
+  }
+  .hifa-ficha__resumen {
+    margin-top: 0.3rem;
+    font-size: 0.85rem;
+    line-height: 1.45;
+    color: var(--tinta-suave);
+    /* Dos líneas: la ficha insinúa, la nota desarrolla. */
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+  .hifa-ficha__flecha {
+    flex-shrink: 0;
+    align-self: flex-start;
+    font-size: 0.9rem;
+    line-height: 1;
+    color: var(--tinta-suave);
+    transition: color 0.25s ease, transform 0.25s ease;
+  }
+  .hifa-ficha:hover .hifa-ficha__flecha,
+  .hifa-ficha:focus-visible .hifa-ficha__flecha {
+    color: var(--ambar-hondo);
+    transform: translate(1px, -1px);
+  }
 
   /* Ficha lateral: la etiqueta del pliego, tipeada. */
   .nota__ficha {
