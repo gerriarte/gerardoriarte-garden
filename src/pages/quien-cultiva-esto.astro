@@ -1,0 +1,102 @@
+---
+import Base from '../layouts/Base.astro';
+import { paginaQuienCultiva } from '../lib/estructurados';
+
+const jsonLd = paginaQuienCultiva();
+---
+
+<Base
+  titulo="Quién cultiva esto — Gerardo Riarte"
+  descripcion="Gerardo Riarte, estratega de marketing. Por qué existe este jardín de conceptos y cómo leerlo: los conceptos son hongos, el valor es el micelio que los conecta."
+  jsonLd={jsonLd}
+>
+  <header class="contenedor cabecera">
+    <p class="etiqueta-campo">lámina iii · el jardinero</p>
+    <h1 class="cabecera__titulo">Quién cultiva esto</h1>
+  </header>
+
+  <div class="contenedor">
+    <div class="prosa">
+      <p class="entrada">
+        Soy Gerardo Riarte — Ger. Estratega de marketing, argentino en Bogotá.
+        Trabajo donde el marketing se cruza con la IA aplicada: marca, medición
+        e ingeniería operando como un mismo sistema. Fundé a:bra (Latam), donde
+        construimos productos en vez de solo presentarlos.
+      </p>
+
+      <p>
+        Este sitio no es mi portfolio. Para eso está a:bra. Acá cultivo criterio
+        en público.
+      </p>
+
+      <h2>Por qué existe este jardín</h2>
+
+      <p>
+        La IA volvió gratis la ejecución. Investigar, resumir, redactar,
+        comparar —lo que durante generaciones distinguió a un profesional— hoy
+        lo hace una máquina en segundos. Lo único que todavía se cobra es saber
+        qué construir: decidir bien bajo incertidumbre, qué priorizar, qué
+        ignorar, qué descartar.
+      </p>
+
+      <p>
+        Ese criterio no se transfiere en un curso ni se resume en un prompt. Se
+        forma decidiendo, y se pierde cuando dejás de hacerlo. Este jardín es
+        donde formo el mío a la vista: cada concepto empieza como una idea
+        suelta y solo madura si cruza la barra de evidencia —no cuando me
+        encariño con él.
+      </p>
+
+      <h2>Cómo leerlo</h2>
+
+      <p>
+        Cada concepto es un hongo: la parte visible. El valor real es el micelio
+        —la red de criterio que los conecta bajo tierra—. Un concepto sube de
+        etapa (espora → cuerpo fructífero) por evidencia de que produjo algo
+        real, no por antigüedad.
+      </p>
+
+      <p>
+        No vas a encontrar reacciones al último release ni tutoriales de
+        herramientas —eso envejece en meses—. Vas a encontrar métodos que
+        aplico, defiendo y a veces descarto.
+      </p>
+
+      <p class="salida">
+        <a href="/" class="salida__link campo">Entrar por el micelio →</a>
+        <a href="/especimenes" class="salida__link campo">Ver el índice →</a>
+      </p>
+    </div>
+  </div>
+</Base>
+
+<style>
+  .cabecera {
+    padding-block: 3.5rem 1.4rem;
+  }
+  .cabecera__titulo {
+    font-size: clamp(2.2rem, 5vw, 3.4rem);
+    margin: 0.7rem 0 0;
+  }
+
+  /* Las dos salidas al jardín. Sin esto la lámina termina en un punto y
+     medio: el texto explica cómo leerlo y no ofrece por dónde empezar. */
+  /* `.prosa .salida` y no `.salida`: `.prosa p` ya fija el margen de todo
+     párrafo y le gana por especificidad a una clase sola. */
+  .prosa .salida {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1.8rem;
+    margin: 2.8rem 0 0;
+    padding-top: 1.4rem;
+    border-top: 1px solid var(--filete);
+  }
+  .salida__link {
+    font-size: 0.84rem;
+    border-bottom: 1px solid var(--filete);
+    padding-bottom: 3px;
+  }
+  .salida__link:hover {
+    border-bottom-color: var(--ambar-hondo);
+  }
+</style>

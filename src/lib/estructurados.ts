@@ -177,6 +177,39 @@ export function paginaEspecimenes(conceptos: Concepto[]) {
   };
 }
 
+/**
+ * La página del autor. Es la única del sitio cuyo tema ES la entidad Persona,
+ * así que la declara con `mainEntity` además de `about`: eso la vuelve la
+ * página de referencia de "Gerardo Riarte" para un motor que desambigua.
+ */
+export function paginaQuienCultiva() {
+  const url = absoluta('/quien-cultiva-esto');
+  return {
+    '@context': 'https://schema.org',
+    '@graph': [
+      persona(),
+      organizacion(),
+      sitioWeb(),
+      {
+        '@type': ['AboutPage', 'ProfilePage'],
+        '@id': `${url}#pagina`,
+        url,
+        name: `Quién cultiva esto — ${SITIO.nombre}`,
+        description:
+          'Quién escribe este jardín de conceptos, por qué existe y cómo leerlo.',
+        isPartOf: { '@id': ID_SITIO },
+        about: { '@id': ID_AUTOR },
+        mainEntity: { '@id': ID_AUTOR },
+        inLanguage: SITIO.idioma,
+      },
+      migas([
+        { nombre: SITIO.nombre, ruta: '/' },
+        { nombre: 'Quién cultiva esto', ruta: '/quien-cultiva-esto' },
+      ]),
+    ],
+  };
+}
+
 interface DatosNota {
   concepto: Concepto;
   /** Slugs y títulos con los que conecta, para declarar la red. */

@@ -58,6 +58,7 @@ ${bloques}
 
 ## Recursos
 
+- [Quién cultiva esto](${absoluta('/quien-cultiva-esto')}): quién escribe, por qué existe el jardín y cómo leerlo.
 - [Índice completo de conceptos](${absoluta('/especimenes')})
 - [Contenido completo en texto plano](${absoluta('/llms-full.txt')})
 - [Feed RSS](${absoluta('/rss.xml')})

@@ -27,6 +27,7 @@ const {
 const ruta = Astro.url.pathname;
 const enMapa = ruta === '/';
 const enEspecimenes = ruta.startsWith('/especimenes');
+const enQuien = ruta.startsWith('/quien-cultiva');
 
 /* Canónica sin barra final: una sola URL por documento.
    Astro emite `/especimenes/` pero los links internos y Vercel usan
@@ -116,7 +117,10 @@ const serializar = (dato: unknown) =>
             href="/especimenes"
             class:list={['barra__link', enEspecimenes && 'es-actual']}>especímenes</a
           >
-          <a href="mailto:ger@abralatam.com" class="barra__link">contacto</a>
+          <a
+            href="/quien-cultiva-esto"
+            class:list={['barra__link', enQuien && 'es-actual']}>quién cultiva</a
+          >
         </div>
       </div>
     </nav>
@@ -170,7 +174,8 @@ const serializar = (dato: unknown) =>
   }
   .barra__interior {
     display: flex;
-    gap: 1.5rem;
+    flex-wrap: wrap;
+    gap: 0.5rem 1.5rem;
     align-items: baseline;
     padding-block: 1.35rem;
   }
@@ -198,6 +203,17 @@ const serializar = (dato: unknown) =>
   }
   .barra__link.es-actual {
     border-bottom-color: var(--tinta);
+  }
+
+  /* "quién cultiva" es más largo que el "contacto" que reemplazó: con la
+     marca al lado, los tres links ya no entran en un teléfono angosto. La
+     barra envuelve y los links se pegan al borde izquierdo en vez de
+     quedar colgando de un margin-left:auto que ya no tiene sobrante. */
+  @media (max-width: 560px) {
+    .barra__links {
+      margin-left: 0;
+      gap: 1.1rem;
+    }
   }
 
   main {
