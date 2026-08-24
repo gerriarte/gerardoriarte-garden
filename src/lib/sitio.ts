@@ -55,6 +55,7 @@ export const REDES: { nombre: string; url: string }[] = [
   { nombre: 'GitHub', url: 'https://github.com/gerriarte' },
   { nombre: 'TikTok', url: 'https://www.tiktok.com/@gerardo.riarte' },
   { nombre: 'Instagram', url: 'https://www.instagram.com/gerardo_riarte/' },
+  { nombre: 'YouTube', url: 'https://www.youtube.com/@muas-mind' },
 ];
 
 /** Solo las que estén completas. */
